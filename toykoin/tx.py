@@ -1,16 +1,14 @@
-from btclib.utils import hash256
-from .script import Script
+from toykoin.utils import hash256
+from toykoin.script import Script
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
 class TxIn:
-    def __init__(
-        self, previous_tx_hash="", previous_txout_index=0, unlocking_script=Script()
-    ):
-        self.previous_tx_hash = previous_tx_hash
-        self.previous_txout_index = previous_txout_index
-        self.unlocking_script = unlocking_script
+    previous_tx_hash: str = ""
+    previous_txout_index: int = 0
+    unlocking_script: Script = Script()
 
     def serialize(self):
         out = bytes.fromhex(self.previous_tx_hash)
@@ -27,6 +25,12 @@ class TxIn:
         unlocking_script = Script.deserialize(data[36 : 36 + script_len])
         return TxIn(previous_tx_hash, previous_txout_index, unlocking_script)
 
+    def is_coinbase(self):
+        return (
+            self.previous_tx_hash == "00" * 32
+            and self.previous_txout_index == 256 ** 2 - 1
+        )
+
     def is_valid(self):
         if not self.unlocking_script.is_valid():
             return False
@@ -35,9 +39,8 @@ class TxIn:
 
 @dataclass
 class TxOut:
-    def __init__(self, value=0, locking_script=Script()):
-        self.value = value
-        self.locking_script = locking_script
+    value: int = 0
+    locking_script: Script = Script()
 
     def serialize(self):
         out = self.value.to_bytes(8, "big")
@@ -58,9 +61,8 @@ class TxOut:
 
 @dataclass
 class Tx:
-    def __init__(self, inputs=[], outputs=[]):
-        self.inputs = inputs
-        self.outputs = outputs
+    inputs: List[TxIn]
+    outputs: List[TxOut]
 
     def serialize(self):
         out = len(self.inputs).to_bytes(2, "big")
@@ -93,9 +95,17 @@ class Tx:
             data = data[output_len:]
         return Tx(inputs, outputs)
 
+    def is_coinbase(self):
+        return len(self.inputs) == 1 and self.inputs[0].is_coinbase()
+
+    # confirm that is a valid transaction only by looking at its data, without looking at the blockchain
     def is_valid(self):
         outpoints = []
+        coinbase = self.is_coinbase()
         for tx_in in self.inputs:
+            # the transaction is not coinbase but has a coinbase input
+            if tx_in.is_coinbase() and not coinbase:
+                return False
             outpoint = (
                 tx_in.previous_tx_hash
                 + tx_in.previous_txout_index.to_bytes(2, "big").hex()
@@ -112,4 +122,4 @@ class Tx:
 
     @property
     def txid(self):
-        hash256(self.serialize()).hex()
+        return hash256(self.serialize()).hex()

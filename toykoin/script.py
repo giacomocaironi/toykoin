@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class Script:
     def __init__(self, hex=""):
         self.hex = hex
