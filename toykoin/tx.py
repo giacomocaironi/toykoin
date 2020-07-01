@@ -26,10 +26,7 @@ class TxIn:
         return TxIn(previous_tx_hash, previous_txout_index, unlocking_script)
 
     def is_coinbase(self):
-        return (
-            self.previous_tx_hash == "00" * 32
-            and self.previous_txout_index == 256 ** 2 - 1
-        )
+        return self.previous_tx_hash == "00" * 32 and self.previous_txout_index == 0
 
     def is_valid(self):
         if not self.unlocking_script.is_valid():
@@ -56,7 +53,11 @@ class TxOut:
         return TxOut(out, locking_script)
 
     def is_valid(self):
-        return self.locking_script.is_valid()
+        if not self.locking_script.is_valid():
+            return False
+        if self.value < 0:
+            return False
+        return True
 
 
 @dataclass

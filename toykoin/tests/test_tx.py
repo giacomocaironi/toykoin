@@ -30,7 +30,7 @@ def test_invalid_serialization():
 
 def test_coinbase():
 
-    tx_in = TxIn("00" * 32, 256 ** 2 - 1, Script())
+    tx_in = TxIn("00" * 32, 0, Script())
     assert tx_in.is_coinbase()
 
 

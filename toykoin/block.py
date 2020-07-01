@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from toykoin.utils import generate_merkle_root
 from toykoin.tx import Tx
+from toykoin.utils import hash256
 from typing import List
 
 
@@ -29,6 +30,10 @@ class BlockHeader:
         if len(self.merkle_root) != 64:
             return False
         return True
+
+    @property
+    def hash(self):
+        return hash256(self.serialize()).hex()
 
 
 @dataclass
@@ -66,7 +71,9 @@ class Block:
             return False
         if not self.transactions[0].is_coinbase():
             return False
+        if not self.transactions[0].is_valid():
+            return False
         for tx in self.transactions[1:]:
-            if tx.is_coinbase():
+            if tx.is_coinbase() or not tx.is_valid():
                 return False
         return True
