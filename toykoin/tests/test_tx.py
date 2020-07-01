@@ -1,7 +1,7 @@
 import pytest
 
-from toykoin.tx import TxIn, TxOut, Tx
-from toykoin.script import Script
+from toykoin.core.tx import TxIn, TxOut, Tx
+from toykoin.core.script import Script
 
 
 def test_valid_serialization():

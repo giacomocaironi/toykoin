@@ -1,4 +1,4 @@
-from toykoin.utxo import UTXOSet
+from toykoin.core.utxo import UTXOSet
 
 
 class Blockchain:

@@ -1,4 +1,4 @@
-from toykoin.block import Block, BlockHeader
+from toykoin.core.block import Block, BlockHeader
 from dataclasses import dataclass
 
 

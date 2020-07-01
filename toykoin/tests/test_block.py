@@ -1,9 +1,9 @@
 import pytest
 
-from toykoin.tx import TxIn, TxOut, Tx
-from toykoin.script import Script
-from toykoin.block import Block, BlockHeader
-from toykoin.utils import generate_merkle_root
+from toykoin.core.tx import TxIn, TxOut, Tx
+from toykoin.core.script import Script
+from toykoin.core.block import Block, BlockHeader
+from toykoin.core.utils import generate_merkle_root
 
 
 def test_valid_serialization_1():

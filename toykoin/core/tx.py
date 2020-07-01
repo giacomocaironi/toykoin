@@ -1,5 +1,5 @@
-from toykoin.utils import hash256
-from toykoin.script import Script
+from toykoin.core.utils import hash256
+from toykoin.core.script import Script
 from dataclasses import dataclass
 from typing import List
 
@@ -55,7 +55,7 @@ class TxOut:
     def is_valid(self):
         if not self.locking_script.is_valid():
             return False
-        if self.value < 0:
+        if self.value < 0 or self.value >= 256 ** 8:
             return False
         return True
 

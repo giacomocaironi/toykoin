@@ -1,9 +1,9 @@
-from toykoin.tx import Tx, TxIn, TxOut
-from toykoin.block import Block, BlockHeader
-from toykoin.script import Script
-from toykoin.utxo import UTXOSet
-from toykoin.blockchain import Blockchain
-from toykoin.utils import generate_merkle_root
+from toykoin.core.tx import Tx, TxIn, TxOut
+from toykoin.core.block import Block, BlockHeader
+from toykoin.core.script import Script
+from toykoin.core.utxo import UTXOSet
+from toykoin.core.blockchain import Blockchain
+from toykoin.core.utils import generate_merkle_root
 
 import pytest
 
