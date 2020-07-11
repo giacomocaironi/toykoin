@@ -1,6 +1,6 @@
 import pytest
 
-from toykoin.core.tx import TxIn, TxOut, Tx
+from toykoin.core.tx import TxIn, TxOut, Tx, OutPoint
 from toykoin.core.script import Script
 from toykoin.core.block import Block, BlockHeader
 from toykoin.core.utils import generate_merkle_root
@@ -8,7 +8,7 @@ from toykoin.core.utils import generate_merkle_root
 
 def test_valid_serialization_1():
 
-    tx_in = TxIn("ff" * 32, 0, Script())
+    tx_in = TxIn(OutPoint("ff" * 32, 0), Script())
     tx_out = TxOut(10, Script())
     tx_1 = Tx([tx_in], [tx_out])
     header = BlockHeader()
@@ -20,7 +20,7 @@ def test_valid_serialization_1():
 
 def test_invalid_serialization_1():
 
-    tx_in = TxIn("ff" * 31, 0, Script())
+    tx_in = TxIn(OutPoint("ff" * 31, 0), Script())
     tx_out = TxOut(10, Script())
     tx_1 = Tx([tx_in], [tx_out])
     header = BlockHeader()
@@ -32,8 +32,8 @@ def test_invalid_serialization_1():
 
 def test_validation_1():
 
-    tx_in = TxIn("ff" * 32, 0, Script())
-    tx_out = TxOut(10, Script())
+    tx_in = TxIn(OutPoint("ff" * 32, 0), Script())
+    tx_out = TxOut(10 ** 10, Script())
     tx_1 = Tx([tx_in], [tx_out])
     header = BlockHeader()
     block = Block(header, [tx_1])
@@ -47,7 +47,7 @@ def test_validation_1():
 
 def test_validation_2():
 
-    tx_in = TxIn("00" * 32, 0, Script())
+    tx_in = TxIn(OutPoint("00" * 32, 0), Script())
     tx_out = TxOut(10 ** 10, Script())
     tx_1 = Tx([tx_in], [tx_out])
     header = BlockHeader()
@@ -62,10 +62,10 @@ def test_validation_2():
 
 def test_validation_3():
 
-    tx_in = TxIn("00" * 32, 256 ** 2 - 1, Script())
+    tx_in = TxIn(OutPoint("ff" * 32, 256 ** 2 - 1), Script())
     tx_out = TxOut(10, Script())
     tx_1 = Tx([tx_in], [tx_out])
-    tx_in_2 = TxIn("00" * 32, 256 ** 2 - 1, Script())
+    tx_in_2 = TxIn(OutPoint("ff" * 32, 256 ** 2 - 1), Script())
     tx_out_2 = TxOut(10, Script())
     tx_2 = Tx([tx_in_2], [tx_out_2])
     header = BlockHeader()

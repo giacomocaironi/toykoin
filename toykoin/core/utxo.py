@@ -16,8 +16,7 @@ class UTXOSet:
         spending_value = 0
         previous_outputs = []
         for tx_in in tx.inputs:
-            id = tx_in.previous_tx_hash
-            id += tx_in.previous_txout_index.to_bytes(2, "big").hex()
+            id = tx_in.prevout.hex
             if id not in self.utxo_list.keys():
                 return False
             tx_out = self.utxo_list[id]
@@ -49,8 +48,7 @@ class UTXOSet:
         total_value = 0
         for tx in block.transactions[1:]:
             for tx_in in tx.inputs:
-                id = tx_in.previous_tx_hash
-                id += tx_in.previous_txout_index.to_bytes(2, "big").hex()
+                id = tx_in.prevout.hex
                 total_value += self.utxo_list[id].value
             for tx_out in tx.outputs:
                 total_value -= tx_out.value
@@ -70,7 +68,7 @@ class UTXOSet:
                 complete_id = tx.txid + i.to_bytes(2, "big").hex()
                 self.utxo_list[complete_id] = tx_out
             for i, tx_in in enumerate(tx.inputs):
-                complete_id = tx_in.previous_tx_hash + i.to_bytes(2, "big").hex()
+                complete_id = tx_in.prevout.hex
                 del self.utxo_list[complete_id]
 
     def reverse_block(self, rev_block):

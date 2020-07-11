@@ -5,33 +5,59 @@ from typing import List
 
 
 @dataclass
+class OutPoint:
+    hash: str
+    index: int
+
+    @property
+    def hex(self):
+        return self.hash + self.index.to_bytes(2, "big").hex()
+
+    def serialize(self):
+        return bytes.fromhex(self.hex)
+
+    @classmethod
+    def deserialize(cls, data):
+        hash = data[:32].hex()
+        index = int.from_bytes(data[32:34], "big")
+        return OutPoint(hash, index)
+
+    def is_coinbase(self):
+        return self.hash == "00" * 32 and self.index == 0
+
+    def is_valid(self):
+        if not self.index < 256 ** 2:
+            return False
+        return True
+
+
+@dataclass
 class TxIn:
-    previous_tx_hash: str = ""
-    previous_txout_index: int = 0
+    prevout: OutPoint
     unlocking_script: Script = Script()
 
     def serialize(self):
-        out = bytes.fromhex(self.previous_tx_hash)
-        out += self.previous_txout_index.to_bytes(2, "big")
+        out = self.prevout.serialize()
         script_bytes = self.unlocking_script.serialize()
         out += len(script_bytes).to_bytes(2, "big") + script_bytes
         return out
 
     @classmethod
     def deserialize(cls, data):
-        previous_tx_hash = data[:32].hex()
-        previous_txout_index = int.from_bytes(data[32:34], "big")
+        prevout = OutPoint.deserialize(data)
         script_len = int.from_bytes(data[34:36], "big")
         unlocking_script = Script.deserialize(data[36 : 36 + script_len])
-        return TxIn(previous_tx_hash, previous_txout_index, unlocking_script)
+        return TxIn(prevout, unlocking_script)
 
     def is_coinbase(self):
-        return self.previous_tx_hash == "00" * 32 and self.previous_txout_index == 0
+        return self.prevout.is_coinbase()
 
     def is_valid(self):
         if not self.unlocking_script.is_valid():
             return False
-        return self.previous_txout_index < 256 ** 2
+        if not self.prevout.is_valid():
+            return False
+        return True
 
 
 @dataclass
@@ -107,13 +133,9 @@ class Tx:
             # the transaction is not coinbase but has a coinbase input
             if tx_in.is_coinbase() and not coinbase:
                 return False
-            outpoint = (
-                tx_in.previous_tx_hash
-                + tx_in.previous_txout_index.to_bytes(2, "big").hex()
-            )
-            if outpoint in outpoints:  # duplicate reference
+            if tx_in.prevout in outpoints:  # duplicate reference
                 return False
-            outpoints.append(outpoint)
+            outpoints.append(tx_in.prevout)
             if not tx_in.is_valid():
                 return False
         for tx_out in self.outputs:
