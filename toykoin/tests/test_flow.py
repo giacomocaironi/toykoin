@@ -150,8 +150,7 @@ def test_flow_5():
 def test_flow_6():
     """
     This MUST fail
-    We add two blocks to the blockchain, the second one with a transaction which spends
-    the coinbase 0 output
+    The block 1 coinbase collects more fees than it should
     """
     coinbase_0 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
@@ -173,5 +172,34 @@ def test_flow_6():
         origin.header.hash, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
+    with pytest.raises(Exception):
+        blockchain.add_block(block_1)
+
+
+def test_flow_7():
+    """
+    This MUST fail
+    The two coinbases have the same txid
+    """
+
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    blockchain.add_block(origin)
+    assert blockchain.last_block_hash == origin.header.hash
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    block_1_header = BlockHeader(
+        origin.header.hash, generate_merkle_root([coinbase_1]), 0
+    )
+    block_1 = Block(block_1_header, [coinbase_1])
     with pytest.raises(Exception):
         blockchain.add_block(block_1)

@@ -1,4 +1,5 @@
 from toykoin.core.block import Block, BlockHeader
+from toykoin.core.tx import OutPoint
 from dataclasses import dataclass
 
 
@@ -37,9 +38,18 @@ class UTXOSet:
                 return False
         return True
 
+    # check if the coinbase is trying to overwrite previous coinbase outputs
+    def validate_coinbase(self, coinbase):
+        for i, tx_out in enumerate(coinbase.outputs):
+            id = OutPoint(coinbase.txid, i).hex
+            if id in self.utxo_list.keys():
+                return False
+        return True
+
     def validate_block(self, block):
-        print(block)
         if not block.is_valid():
+            return False
+        if not self.validate_coinbase(block.transactions[0]):
             return False
         for tx in block.transactions[1:]:  # do not check the coinbases
             if not self.validate_transaction(tx):
@@ -61,11 +71,11 @@ class UTXOSet:
 
     def add_block(self, block):
         for i, tx_out in enumerate(block.transactions[0].outputs):
-            complete_id = block.transactions[0].txid + i.to_bytes(2, "big").hex()
+            complete_id = OutPoint(block.transactions[0].txid, i).hex
             self.utxo_list[complete_id] = tx_out
         for tx in block.transactions[1:]:
             for i, tx_out in enumerate(tx.outputs):
-                complete_id = tx.txid + i.to_bytes(2, "big").hex()
+                complete_id = OutPoint(tx.txid, i).hex
                 self.utxo_list[complete_id] = tx_out
             for i, tx_in in enumerate(tx.inputs):
                 complete_id = tx_in.prevout.hex
