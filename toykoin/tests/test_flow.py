@@ -7,6 +7,11 @@ from toykoin.core.utils import generate_merkle_root
 
 import pytest
 
+# import os
+#
+# def remove_db():
+#     os.remove('main_utxo_set.sqlite')
+
 
 def test_flow_1():
     """

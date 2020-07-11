@@ -1,7 +1,8 @@
-from dataclasses import dataclass
 from toykoin.core.utils import generate_merkle_root
 from toykoin.core.tx import Tx
 from toykoin.core.utils import hash256
+
+from dataclasses import dataclass
 from typing import List
 
 

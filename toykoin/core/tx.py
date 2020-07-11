@@ -1,5 +1,6 @@
 from toykoin.core.utils import hash256
 from toykoin.core.script import Script
+
 from dataclasses import dataclass
 from typing import List
 

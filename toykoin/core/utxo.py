@@ -1,11 +1,39 @@
 from toykoin.core.block import Block, BlockHeader
-from toykoin.core.tx import OutPoint
+from toykoin.core.tx import OutPoint, TxOut
+from toykoin.core.script import Script
+
 from dataclasses import dataclass
+import sqlite3
 
 
 class UTXOSet:
-    def __init__(self):
-        self.utxo_list = {}
+    def __init__(self, location="", name="main_utxo_set", in_memory=False):
+        self.db = (
+            sqlite3.connect(location + name + ".sqlite")
+            if not in_memory
+            else sqlite3.connect(":memory:")
+        )
+        self.cursor = self.db.cursor()
+        try:  # initializing db
+            self.cursor.execute("CREATE TABLE utxo (id, value, script)")
+        except:
+            pass
+
+    def select_utxo(self, id):
+        self.cursor.execute("SELECT * FROM utxo WHERE id = ?", (id,))
+        utxo = self.cursor.fetchall()
+        return TxOut(utxo[0][1], Script.deserialize(utxo[0][1])) if utxo else None
+
+    # does not commit to database
+    def add_utxo(self, id, utxo):
+        self.cursor.execute(
+            "INSERT INTO utxo VALUES (?, ?, ?)",
+            (id, utxo.value, utxo.locking_script.serialize()),
+        )
+
+    # does not commit to database
+    def remove_utxo(self, id):
+        self.cursor.execute("DELETE FROM utxo WHERE id = ?", (id,))
 
     # confirm is a valid transaction by
     def validate_transaction(self, tx):
@@ -18,9 +46,9 @@ class UTXOSet:
         previous_outputs = []
         for tx_in in tx.inputs:
             id = tx_in.prevout.hex
-            if id not in self.utxo_list.keys():
+            tx_out = self.select_utxo(id)
+            if not tx_out:
                 return False
-            tx_out = self.utxo_list[id]
             previous_outputs.append(tx_out)
             available_value += tx_out.value
 
@@ -42,7 +70,7 @@ class UTXOSet:
     def validate_coinbase(self, coinbase):
         for i, tx_out in enumerate(coinbase.outputs):
             id = OutPoint(coinbase.txid, i).hex
-            if id in self.utxo_list.keys():
+            if self.select_utxo(id):
                 return False
         return True
 
@@ -53,33 +81,39 @@ class UTXOSet:
             return False
         for tx in block.transactions[1:]:  # do not check the coinbases
             if not self.validate_transaction(tx):
+                print(tx)
                 return False
         # check if miner is collecting fees in the right way
         total_value = 0
         for tx in block.transactions[1:]:
             for tx_in in tx.inputs:
                 id = tx_in.prevout.hex
-                total_value += self.utxo_list[id].value
+                total_value += self.select_utxo(id).value
             for tx_out in tx.outputs:
                 total_value -= tx_out.value
         for tx_out in block.transactions[0].outputs:
             total_value -= tx_out.value
-        print(total_value)
         if 10 ** 10 + total_value < 0:
             return False
         return True
 
     def add_block(self, block):
-        for i, tx_out in enumerate(block.transactions[0].outputs):
-            complete_id = OutPoint(block.transactions[0].txid, i).hex
-            self.utxo_list[complete_id] = tx_out
-        for tx in block.transactions[1:]:
-            for i, tx_out in enumerate(tx.outputs):
-                complete_id = OutPoint(tx.txid, i).hex
-                self.utxo_list[complete_id] = tx_out
-            for i, tx_in in enumerate(tx.inputs):
-                complete_id = tx_in.prevout.hex
-                del self.utxo_list[complete_id]
+        if not self.validate_block(block):
+            raise Exception
+        try:
+            for i, tx_out in enumerate(block.transactions[0].outputs):
+                complete_id = OutPoint(block.transactions[0].txid, i).hex
+                self.add_utxo(complete_id, tx_out)
+            for tx in block.transactions[1:]:
+                for i, tx_out in enumerate(tx.outputs):
+                    complete_id = OutPoint(tx.txid, i).hex
+                    self.add_utxo(complete_id, tx_out)
+                for i, tx_in in enumerate(tx.inputs):
+                    complete_id = tx_in.prevout.hex
+                    self.remove_utxo(complete_id)
+            self.db.commit()
+        except:  # something went wrong in the db
+            self.db.rollback()
 
     def reverse_block(self, rev_block):
         pass
