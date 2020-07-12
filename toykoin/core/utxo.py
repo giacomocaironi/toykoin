@@ -1,8 +1,7 @@
-from toykoin.core.block import Block, BlockHeader
+from toykoin.core.block import Block, BlockHeader, RevBlock
 from toykoin.core.tx import OutPoint, TxOut
 from toykoin.core.script import Script
 
-from dataclasses import dataclass
 import sqlite3
 
 
@@ -18,6 +17,11 @@ class UTXOSet:
             self.cursor.execute("CREATE TABLE utxo (id, value, script)")
         except:
             pass
+
+    def get_utxo_list(self):
+        self.cursor.execute("SELECT id FROM utxo")
+        id_list = self.cursor.fetchall()
+        return id_list
 
     def select_utxo(self, id):
         self.cursor.execute("SELECT * FROM utxo WHERE id = ?", (id,))
@@ -98,27 +102,43 @@ class UTXOSet:
         return True
 
     def add_block(self, block):
+        rev_block = RevBlock([], [])
         if not self.validate_block(block):
             raise Exception
         try:
             for i, tx_out in enumerate(block.transactions[0].outputs):
                 complete_id = OutPoint(block.transactions[0].txid, i).hex
                 self.add_utxo(complete_id, tx_out)
+                rev_block.removable.append(complete_id)
             for tx in block.transactions[1:]:
                 for i, tx_out in enumerate(tx.outputs):
                     complete_id = OutPoint(tx.txid, i).hex
                     self.add_utxo(complete_id, tx_out)
+                    rev_block.removable.append(complete_id)
                 for i, tx_in in enumerate(tx.inputs):
                     complete_id = tx_in.prevout.hex
+                    rev_block.old_txout.append(
+                        [complete_id, self.select_utxo(complete_id)]
+                    )
                     self.remove_utxo(complete_id)
             self.db.commit()
         except:  # something went wrong in the db
             self.db.rollback()
+            raise Exception
+        return rev_block
+
+    def validate_reverse_block(self, rev_block):
+        return True
 
     def reverse_block(self, rev_block):
-        pass
-
-
-@dataclass
-class RevBlock:
-    pass
+        if not self.validate_reverse_block(rev_block):
+            raise Exception
+        try:
+            for r_id in rev_block.removable:
+                self.remove_utxo(r_id)
+            for id, utxo in rev_block.old_txout:
+                self.add_utxo(id, utxo)
+            self.db.commit()
+        except:  # something went wrong in the db
+            self.db.rollback()
+            raise Exception

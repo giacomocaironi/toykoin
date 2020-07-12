@@ -1,9 +1,9 @@
 from toykoin.core.utils import generate_merkle_root
-from toykoin.core.tx import Tx
+from toykoin.core.tx import Tx, TxOut
 from toykoin.core.utils import hash256
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 
 @dataclass
@@ -78,3 +78,41 @@ class Block:
             if tx.is_coinbase() or not tx.is_valid():
                 return False
         return True
+
+
+@dataclass
+class RevBlock:
+    old_txout: List[Tuple[str, TxOut]]
+    removable: List[str]
+
+    def serialize(self):
+        out = len(self.old_txout).to_bytes(2, "big")
+        for txout in self.old_txout:
+            out += bytes.fromhex(txout[0])
+            tx_bytes = txout[1].serialize()
+            out += len(tx_bytes).to_bytes(2, "big") + tx_bytes
+        out += len(self.removable).to_bytes(2, "big")
+        for txout in self.removable:
+            out += bytes.fromhex(txout)
+        return out
+
+    @classmethod
+    def deserialize(cls, data):
+        old_txout = []
+        removable = []
+        len_txout_list = int.from_bytes(data[:2], "big")
+        data = data[2:]
+        for x in range(len_txout_list):
+            id = data[:36].hex()
+            data = data[36:]
+            txout_size = int.from_bytes(data[:2], "big")
+            txout = TxOut.deserialize(data[2 : 2 + txout_size])
+            old_txout.append([id, txout])
+            data = data[2 + txout_size :]
+
+        len_removable = int.from_bytes(data[:2], "big")
+        data = data[2:]
+        for x in range(len_removable):
+            removable.append(data[:36].hex())
+            data = data[36:]
+        return RevBlock(old_txout, removable)

@@ -22,8 +22,9 @@ class Blockchain:
             raise Exception
         if not self.main_utxo_set.validate_block(block):
             raise Exception
-        self.main_utxo_set.add_block(block)
+        reverse_block = self.main_utxo_set.add_block(block)
         self.last_block_hash = block.header.hash
+        return reverse_block
 
     def reorganize(self, blocks):
         pass

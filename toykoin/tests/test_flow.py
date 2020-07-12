@@ -6,6 +6,7 @@ from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
 
 import pytest
+from copy import deepcopy
 
 # import os
 #
@@ -206,5 +207,67 @@ def test_flow_7():
         origin.header.hash, generate_merkle_root([coinbase_1]), 0
     )
     block_1 = Block(block_1_header, [coinbase_1])
+    with pytest.raises(Exception):
+        blockchain.add_block(block_1)
+
+
+def test_flow_8():
+    """
+    This MUST NOT fail
+    Test of block reverse
+    """
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    blockchain.add_block(origin)
+
+    old_utxo_list = blockchain.main_utxo_set.get_utxo_list()
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
+    )
+    tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
+    rev_block = blockchain.add_block(block_1)
+
+    blockchain.main_utxo_set.reverse_block(rev_block)
+    assert blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
+
+
+def test_flow_9():
+    """
+    This MUST fail
+    The transaction tries to spend an unkown utxo
+    """
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    blockchain.add_block(origin)
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+    )
+    # tries to spend the coinbase output at index 1, which doesn't exist
+    tx = Tx([TxIn(OutPoint(coinbase_0.txid, 1), Script())], [TxOut(10 ** 5, Script())])
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
         blockchain.add_block(block_1)
