@@ -2,16 +2,13 @@ from toykoin.core.block import Block, BlockHeader, RevBlock
 from toykoin.core.tx import OutPoint, TxOut
 from toykoin.core.script import Script
 
+import os
 import sqlite3
 
 
 class UTXOSet:
-    def __init__(self, location="", name="main_utxo_set", in_memory=False):
-        self.db = (
-            sqlite3.connect(location + name + ".sqlite")
-            if not in_memory
-            else sqlite3.connect(":memory:")
-        )
+    def __init__(self, location="", name="main_utxo_set"):
+        self.db = sqlite3.connect(os.path.join(location, name + ".sqlite"))
         self.cursor = self.db.cursor()
         try:  # initializing db
             self.cursor.execute("CREATE TABLE utxo (id, value, script)")
@@ -102,7 +99,7 @@ class UTXOSet:
         return True
 
     def add_block(self, block):
-        rev_block = RevBlock([], [])
+        rev_block = RevBlock(block.header.hash, [], [])
         if not self.validate_block(block):
             raise Exception
         try:
@@ -121,9 +118,9 @@ class UTXOSet:
                         [complete_id, self.select_utxo(complete_id)]
                     )
                     self.remove_utxo(complete_id)
-            self.db.commit()
+            # self.db.commit()
         except:  # something went wrong in the db
-            self.db.rollback()
+            # self.db.rollback()
             raise Exception
         return rev_block
 
@@ -138,7 +135,7 @@ class UTXOSet:
                 self.remove_utxo(r_id)
             for id, utxo in rev_block.old_txout:
                 self.add_utxo(id, utxo)
-            self.db.commit()
+            # self.db.commit()
         except:  # something went wrong in the db
-            self.db.rollback()
+            # self.db.rollback()
             raise Exception

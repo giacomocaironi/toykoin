@@ -82,11 +82,13 @@ class Block:
 
 @dataclass
 class RevBlock:
+    hash: str
     old_txout: List[Tuple[str, TxOut]]
     removable: List[str]
 
     def serialize(self):
-        out = len(self.old_txout).to_bytes(2, "big")
+        out = bytes.fromhex(self.hash)
+        out += len(self.old_txout).to_bytes(2, "big")
         for txout in self.old_txout:
             out += bytes.fromhex(txout[0])
             tx_bytes = txout[1].serialize()
@@ -98,6 +100,8 @@ class RevBlock:
 
     @classmethod
     def deserialize(cls, data):
+        hash = data[:32].hex()
+        data = data[32:]
         old_txout = []
         removable = []
         len_txout_list = int.from_bytes(data[:2], "big")
@@ -115,4 +119,4 @@ class RevBlock:
         for x in range(len_removable):
             removable.append(data[:34].hex())
             data = data[34:]
-        return RevBlock(old_txout, removable)
+        return RevBlock(hash, old_txout, removable)

@@ -5,6 +5,13 @@ from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
 
 import pytest
+import os
+import shutil
+
+
+def reset_blockchain():
+    base_dir = os.path.join(os.path.expanduser("~"), ".toykoin", "regtest")
+    shutil.rmtree(base_dir)
 
 
 def test_flow_1():
@@ -22,7 +29,7 @@ def test_flow_1():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
     assert blockchain.last_block_hash == origin.header.hash
 
     coinbase_1 = Tx(
@@ -32,8 +39,10 @@ def test_flow_1():
         origin.header.hash, generate_merkle_root([coinbase_1]), 0
     )
     block_1 = Block(block_1_header, [coinbase_1])
-    blockchain.add_block(block_1)
+    blockchain._add_block(block_1)
     assert blockchain.last_block_hash == block_1.header.hash
+
+    reset_blockchain()
 
 
 def test_flow_2():
@@ -49,13 +58,15 @@ def test_flow_2():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 10, Script())])
     block_1_header = BlockHeader(origin.header.hash, generate_merkle_root([tx]), 0)
     block_1 = Block(block_1_header, [tx])
     with pytest.raises(Exception):  # missing coinbase
-        blockchain.add_block(block_1)
+        blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_3():
@@ -72,7 +83,7 @@ def test_flow_3():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
@@ -83,7 +94,9 @@ def test_flow_3():
         origin.header.hash, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
-    blockchain.add_block(block_1)
+    blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_4():
@@ -99,7 +112,7 @@ def test_flow_4():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
@@ -114,7 +127,9 @@ def test_flow_4():
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
-        blockchain.add_block(block_1)
+        blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_5():
@@ -131,7 +146,7 @@ def test_flow_5():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
@@ -143,7 +158,9 @@ def test_flow_5():
         origin.header.hash, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
-    blockchain.add_block(block_1)
+    blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_6():
@@ -159,7 +176,7 @@ def test_flow_6():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
@@ -172,7 +189,9 @@ def test_flow_6():
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
-        blockchain.add_block(block_1)
+        blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_7():
@@ -190,7 +209,7 @@ def test_flow_7():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
     assert blockchain.last_block_hash == origin.header.hash
 
     coinbase_1 = Tx(
@@ -201,7 +220,9 @@ def test_flow_7():
     )
     block_1 = Block(block_1_header, [coinbase_1])
     with pytest.raises(Exception):
-        blockchain.add_block(block_1)
+        blockchain._add_block(block_1)
+
+    reset_blockchain()
 
 
 def test_flow_8():
@@ -217,7 +238,7 @@ def test_flow_8():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     old_utxo_list = blockchain.main_utxo_set.get_utxo_list()
 
@@ -231,11 +252,13 @@ def test_flow_8():
         origin.header.hash, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
-    rev_block = blockchain.add_block(block_1)
+    rev_block = blockchain._add_block(block_1)
 
     assert not blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
-    blockchain.main_utxo_set.reverse_block(rev_block)
+    blockchain._reverse_block(rev_block)
     assert blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
+
+    reset_blockchain()
 
 
 def test_flow_9():
@@ -251,7 +274,7 @@ def test_flow_9():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain.add_block(origin)
+    blockchain._add_block(origin)
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
@@ -264,4 +287,6 @@ def test_flow_9():
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
-        blockchain.add_block(block_1)
+        blockchain._add_block(block_1)
+
+    reset_blockchain()
