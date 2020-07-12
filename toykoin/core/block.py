@@ -103,8 +103,8 @@ class RevBlock:
         len_txout_list = int.from_bytes(data[:2], "big")
         data = data[2:]
         for x in range(len_txout_list):
-            id = data[:36].hex()
-            data = data[36:]
+            id = data[:34].hex()
+            data = data[34:]
             txout_size = int.from_bytes(data[:2], "big")
             txout = TxOut.deserialize(data[2 : 2 + txout_size])
             old_txout.append([id, txout])
@@ -113,6 +113,6 @@ class RevBlock:
         len_removable = int.from_bytes(data[:2], "big")
         data = data[2:]
         for x in range(len_removable):
-            removable.append(data[:36].hex())
-            data = data[36:]
+            removable.append(data[:34].hex())
+            data = data[34:]
         return RevBlock(old_txout, removable)

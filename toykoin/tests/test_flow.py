@@ -1,17 +1,10 @@
 from toykoin.core.tx import Tx, TxIn, TxOut, OutPoint
 from toykoin.core.block import Block, BlockHeader
 from toykoin.core.script import Script
-from toykoin.core.utxo import UTXOSet
 from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
 
 import pytest
-from copy import deepcopy
-
-# import os
-#
-# def remove_db():
-#     os.remove('main_utxo_set.sqlite')
 
 
 def test_flow_1():
@@ -240,6 +233,7 @@ def test_flow_8():
     block_1 = Block(block_1_header, block_1_transactions)
     rev_block = blockchain.add_block(block_1)
 
+    assert not blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
     blockchain.main_utxo_set.reverse_block(rev_block)
     assert blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
 
