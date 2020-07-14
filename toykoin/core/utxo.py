@@ -20,7 +20,7 @@ class UTXOSet:
         id_list = self.cursor.fetchall()
         return id_list
 
-    def select_utxo(self, id):
+    def get_utxo(self, id):
         self.cursor.execute("SELECT * FROM utxo WHERE id = ?", (id,))
         utxo = self.cursor.fetchall()
         return TxOut(utxo[0][1], Script.deserialize(utxo[0][1])) if utxo else None
@@ -47,7 +47,7 @@ class UTXOSet:
         previous_outputs = []
         for tx_in in tx.inputs:
             id = tx_in.prevout.hex
-            tx_out = self.select_utxo(id)
+            tx_out = self.get_utxo(id)
             if not tx_out:
                 return False
             previous_outputs.append(tx_out)
@@ -71,7 +71,7 @@ class UTXOSet:
     def validate_coinbase(self, coinbase):
         for i, tx_out in enumerate(coinbase.outputs):
             id = OutPoint(coinbase.txid, i).hex
-            if self.select_utxo(id):
+            if self.get_utxo(id):
                 return False
         return True
 
@@ -89,7 +89,7 @@ class UTXOSet:
         for tx in block.transactions[1:]:
             for tx_in in tx.inputs:
                 id = tx_in.prevout.hex
-                total_value += self.select_utxo(id).value
+                total_value += self.get_utxo(id).value
             for tx_out in tx.outputs:
                 total_value -= tx_out.value
         for tx_out in block.transactions[0].outputs:
@@ -102,26 +102,19 @@ class UTXOSet:
         rev_block = RevBlock(block.header.pow, [], [])
         if not self.validate_block(block):
             raise Exception
-        try:
-            for i, tx_out in enumerate(block.transactions[0].outputs):
-                complete_id = OutPoint(block.transactions[0].txid, i).hex
+        for i, tx_out in enumerate(block.transactions[0].outputs):
+            complete_id = OutPoint(block.transactions[0].txid, i).hex
+            self.add_utxo(complete_id, tx_out)
+            rev_block.removable.append(complete_id)
+        for tx in block.transactions[1:]:
+            for i, tx_out in enumerate(tx.outputs):
+                complete_id = OutPoint(tx.txid, i).hex
                 self.add_utxo(complete_id, tx_out)
                 rev_block.removable.append(complete_id)
-            for tx in block.transactions[1:]:
-                for i, tx_out in enumerate(tx.outputs):
-                    complete_id = OutPoint(tx.txid, i).hex
-                    self.add_utxo(complete_id, tx_out)
-                    rev_block.removable.append(complete_id)
-                for i, tx_in in enumerate(tx.inputs):
-                    complete_id = tx_in.prevout.hex
-                    rev_block.old_txout.append(
-                        [complete_id, self.select_utxo(complete_id)]
-                    )
-                    self.remove_utxo(complete_id)
-            # self.db.commit()
-        except:  # something went wrong in the db
-            # self.db.rollback()
-            raise Exception
+            for i, tx_in in enumerate(tx.inputs):
+                complete_id = tx_in.prevout.hex
+                rev_block.old_txout.append([complete_id, self.get_utxo(complete_id)])
+                self.remove_utxo(complete_id)
         return rev_block
 
     def validate_reverse_block(self, rev_block):
@@ -130,12 +123,7 @@ class UTXOSet:
     def reverse_block(self, rev_block):
         if not self.validate_reverse_block(rev_block):
             raise Exception
-        try:
-            for r_id in rev_block.removable:
-                self.remove_utxo(r_id)
-            for id, utxo in rev_block.old_txout:
-                self.add_utxo(id, utxo)
-            # self.db.commit()
-        except:  # something went wrong in the db
-            # self.db.rollback()
-            raise Exception
+        for r_id in rev_block.removable:
+            self.remove_utxo(r_id)
+        for id, utxo in rev_block.old_txout:
+            self.add_utxo(id, utxo)

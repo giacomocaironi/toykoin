@@ -1,4 +1,5 @@
 from toykoin.core.utxo import UTXOSet
+from toykoin.core.block import RevBlock
 
 import os
 import sqlite3
@@ -20,31 +21,39 @@ class Blockchain:
         self.db = sqlite3.connect(os.path.join(self.base_dir, "chainstate.sqlite"))
         self.cursor = self.db.cursor()
         try:  # initializing db
-            self.cursor.execute("CREATE TABLE header (pow, previous_pow)")
+            self.cursor.execute("CREATE TABLE header (pow, previous_pow, id)")
         except:
             pass
 
-    def get_last_block(self):
+    def get_block(self, pow):
+        self.cursor.execute("SELECT * FROM header WHERE pow = ?", (pow,))
+        block = self.cursor.fetchall()
+        return block[0] if block else None
+
+    def get_last_blocks(self, n=1):
         self.cursor.execute(
-            "SELECT pow FROM header WHERE pow NOT IN (SELECT previous_pow FROM header)"
+            "SELECT * FROM header WHERE id > (SELECT MAX(id) FROM header) -?", (n,)
         )
         last_pow = self.cursor.fetchall()
-        # print(last_pow)
-        if len(last_pow) != 1:
-            raise Exception  # multiple blocks without child
+        if not last_pow:
+            return [[None, None, -1]]
         else:
-            return last_pow[0][0]
+            return last_pow
 
     def _add_block(self, block):
         previous_pow = block.header.previous_pow
-        if previous_pow != "00" * 32 and previous_pow != self.get_last_block():
+        if previous_pow != "00" * 32 and previous_pow != self.get_last_blocks()[0][0]:
             raise Exception
         if not self.main_utxo_set.validate_block(block):
             raise Exception
         reverse_block = self.main_utxo_set.add_block(block)
         self.cursor.execute(
-            "INSERT INTO header VALUES (?, ?)",
-            (block.header.pow, block.header.previous_pow),
+            "INSERT INTO header VALUES (?, ?, ?)",
+            (
+                block.header.pow,
+                block.header.previous_pow,
+                self.get_last_blocks()[0][2] + 1,
+            ),
         )
         self.last_block_pow = block.header.pow
         filename = os.path.join(self.base_dir, "blocks", block.header.pow + ".block")
@@ -56,7 +65,7 @@ class Blockchain:
         return reverse_block
 
     def _reverse_block(self, rev_block):
-        if rev_block.pow != self.get_last_block():
+        if rev_block.pow != self.get_last_blocks()[0][0]:
             raise Exception
         if not self.main_utxo_set.validate_reverse_block(rev_block):
             raise Exception
@@ -65,4 +74,45 @@ class Blockchain:
 
     # it does not raise exceptions, it return True if the blockchain pow been changed
     def add_blocks(self, blocks):
-        pass
+
+        for i, block in enumerate(blocks):
+            if not self.get_block(block.header.pow):  # first new block
+                blocks = blocks[i:]
+                break
+
+        try:  # tries to add enough blocks to be in the best chain
+
+            last_valid_block = self.get_block(blocks[0].header.previous_pow)
+            if last_valid_block:  # if it is not the first block
+                last_valid_index = self.get_block(last_valid_block[0])[2]
+                last_index = self.get_last_blocks()[0][2]
+                if last_index - last_valid_index > 0:
+                    reverse_blocks = self.get_last_blocks(last_index - last_valid_index)
+                    for rev_block in reverse_blocks:
+                        filename = os.path.join(
+                            self.base_dir, "rev", rev_block[0] + ".rev"
+                        )
+                        with open(filename, "rb") as f:
+                            rev_block = RevBlock.deserialize(f.read())
+                        self._reverse_block(rev_block)
+
+            blocks = (i for i in blocks)  # change to iterator
+            for block in blocks:
+                self._add_block(block)
+                # check wheter this chain is already the best
+            self.main_utxo_set.db.commit()
+            self.db.commit()
+        except:
+            self.main_utxo_set.db.rollback()
+            self.db.rollback()
+            return False
+
+        for block in blocks:
+            try:
+                self._add_block(block)
+                self.main_utxo_set.db.commit()
+                self.db.commit()
+            except:
+                self.main_utxo_set.db.rollback()
+                self.db.rollback()
+        return True
