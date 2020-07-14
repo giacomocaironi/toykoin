@@ -56,6 +56,8 @@ class Blockchain:
         return reverse_block
 
     def _reverse_block(self, rev_block):
+        if rev_block.hash != self.get_last_block():
+            raise Exception
         if not self.main_utxo_set.validate_reverse_block(rev_block):
             raise Exception
         self.main_utxo_set.reverse_block(rev_block)

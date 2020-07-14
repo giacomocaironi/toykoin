@@ -238,7 +238,7 @@ def test_flow_8():
     origin = Block(origin_header, origin_transactions)
 
     blockchain = Blockchain()
-    blockchain._add_block(origin)
+    rev_origin = blockchain._add_block(origin)
 
     old_utxo_list = blockchain.main_utxo_set.get_utxo_list()
 
@@ -257,6 +257,12 @@ def test_flow_8():
     assert not blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
     blockchain._reverse_block(rev_block)
     assert blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
+
+    with pytest.raises(Exception):
+        blockchain._reverse_block(rev_block)
+
+    blockchain._reverse_block(rev_origin)
+    assert blockchain.main_utxo_set.get_utxo_list() == []
 
     reset_blockchain()
 
@@ -288,5 +294,89 @@ def test_flow_9():
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
         blockchain._add_block(block_1)
+
+    reset_blockchain()
+
+
+def test_flow_10():
+    """
+    This MUST fail
+    Test of block reverse
+    """
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    rev_block_0 = blockchain._add_block(origin)
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
+    )
+    tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
+    blockchain._add_block(block_1)
+
+    with pytest.raises(Exception):
+        blockchain._reverse_block(rev_block_0)
+
+    reset_blockchain()
+
+
+def test_flow_11():
+    """
+    This MUST NOT fail
+    """
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    blockchain._add_block(origin)
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
+    )
+    tx = Tx(
+        [TxIn(OutPoint(coinbase_0.txid, 0), Script())],
+        [TxOut(10 ** 10 - 100, Script()), TxOut(50, Script())],
+    )
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
+    blockchain._add_block(block_1)
+
+    coinbase_2 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+    )
+    tx_2 = Tx([TxIn(OutPoint(tx.txid, 0), Script())], [TxOut(10 ** 10 - 200, Script())])
+    tx_3 = Tx(
+        [
+            TxIn(OutPoint(coinbase_1.txid, 0), Script()),
+            TxIn(OutPoint(coinbase_1.txid, 1), Script()),
+            TxIn(OutPoint(tx.txid, 1), Script()),
+        ],
+        [TxOut(10 ** 10 + 50, Script())],
+    )
+    block_2_transactions = [coinbase_2, tx_2, tx_3]
+    block_2_header = BlockHeader(
+        block_1.header.hash, generate_merkle_root(block_2_transactions), 0
+    )
+    block_2 = Block(block_2_header, block_2_transactions)
+    blockchain._add_block(block_2)
 
     reset_blockchain()
