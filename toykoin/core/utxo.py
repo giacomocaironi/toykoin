@@ -82,7 +82,6 @@ class UTXOSet:
             return False
         for tx in block.transactions[1:]:  # do not check the coinbases
             if not self.validate_transaction(tx):
-                print(tx)
                 return False
         # check if miner is collecting fees in the right way
         total_value = 0

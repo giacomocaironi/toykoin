@@ -386,14 +386,15 @@ def test_flow_12():
     """
     This MUST NOT fail
     """
+
+    blockchain = Blockchain()
+
     coinbase_0 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
     )
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
     origin = Block(origin_header, origin_transactions)
-
-    blockchain = Blockchain()
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
@@ -430,5 +431,20 @@ def test_flow_12():
 
     # we try adding the origin again, no problem, it is skipped
     assert blockchain.add_blocks([origin, block_1, block_2])
+
+    coinbase_3 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("cc"))], [TxOut(10 ** 10, Script())]
+    )
+    # tx_4 speds the same inputs as tx_2, but it is in a different chain so it is OK
+    tx_4 = Tx(
+        [TxIn(OutPoint(tx.txid, 0), Script("dd"))], [TxOut(10 ** 10 - 200, Script())]
+    )
+    block_3_transactions = [coinbase_3, tx_4]
+    block_3_header = BlockHeader(
+        block_1.header.pow, generate_merkle_root(block_3_transactions), 0
+    )
+    block_3 = Block(block_3_header, block_3_transactions)
+
+    assert blockchain.add_blocks([block_3])
 
     reset_blockchain()

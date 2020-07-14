@@ -1,5 +1,6 @@
 from toykoin.core.utxo import UTXOSet
 from toykoin.core.block import RevBlock
+from toykoin.core.pow import work_from_chain
 
 import os
 import sqlite3
@@ -96,13 +97,19 @@ class Blockchain:
                             rev_block = RevBlock.deserialize(f.read())
                         self._reverse_block(rev_block)
 
-            blocks = (i for i in blocks)  # change to iterator
-            for block in blocks:
-                self._add_block(block)
-                # check wheter this chain is already the best
+                    previous_work = work_from_chain([rev[0] for rev in reverse_blocks])
+                    current_chain = []
+                    blocks = (i for i in blocks)  # change to iterator
+                    for block in blocks:
+                        self._add_block(block)
+                        current_chain.append(block.header.pow)
+                        if work_from_chain(current_chain) > previous_work:
+                            break  # already in best chain
+
             self.main_utxo_set.db.commit()
             self.db.commit()
-        except:
+        except Exception as e:
+            print(e)
             self.main_utxo_set.db.rollback()
             self.db.rollback()
             return False
