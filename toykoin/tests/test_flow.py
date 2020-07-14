@@ -30,17 +30,17 @@ def test_flow_1():
 
     blockchain = Blockchain()
     blockchain._add_block(origin)
-    assert blockchain.last_block_hash == origin.header.hash
+    assert blockchain.last_block_pow == origin.header.pow
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
     )
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root([coinbase_1]), 0
+        origin.header.pow, generate_merkle_root([coinbase_1]), 0
     )
     block_1 = Block(block_1_header, [coinbase_1])
     blockchain._add_block(block_1)
-    assert blockchain.last_block_hash == block_1.header.hash
+    assert blockchain.last_block_pow == block_1.header.pow
 
     reset_blockchain()
 
@@ -61,7 +61,7 @@ def test_flow_2():
     blockchain._add_block(origin)
 
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 10, Script())])
-    block_1_header = BlockHeader(origin.header.hash, generate_merkle_root([tx]), 0)
+    block_1_header = BlockHeader(origin.header.pow, generate_merkle_root([tx]), 0)
     block_1 = Block(block_1_header, [tx])
     with pytest.raises(Exception):  # missing coinbase
         blockchain._add_block(block_1)
@@ -91,7 +91,7 @@ def test_flow_3():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     blockchain._add_block(block_1)
@@ -123,7 +123,7 @@ def test_flow_4():
     )
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
@@ -155,7 +155,7 @@ def test_flow_5():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     blockchain._add_block(block_1)
@@ -185,7 +185,7 @@ def test_flow_6():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
@@ -210,13 +210,13 @@ def test_flow_7():
 
     blockchain = Blockchain()
     blockchain._add_block(origin)
-    assert blockchain.last_block_hash == origin.header.hash
+    assert blockchain.last_block_pow == origin.header.pow
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
     )
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root([coinbase_1]), 0
+        origin.header.pow, generate_merkle_root([coinbase_1]), 0
     )
     block_1 = Block(block_1_header, [coinbase_1])
     with pytest.raises(Exception):
@@ -249,7 +249,7 @@ def test_flow_8():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     rev_block = blockchain._add_block(block_1)
@@ -289,7 +289,7 @@ def test_flow_9():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 1), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     with pytest.raises(Exception):
@@ -320,7 +320,7 @@ def test_flow_10():
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     blockchain._add_block(block_1)
@@ -355,7 +355,7 @@ def test_flow_11():
     )
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
-        origin.header.hash, generate_merkle_root(block_1_transactions), 0
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
     )
     block_1 = Block(block_1_header, block_1_transactions)
     blockchain._add_block(block_1)
@@ -374,7 +374,7 @@ def test_flow_11():
     )
     block_2_transactions = [coinbase_2, tx_2, tx_3]
     block_2_header = BlockHeader(
-        block_1.header.hash, generate_merkle_root(block_2_transactions), 0
+        block_1.header.pow, generate_merkle_root(block_2_transactions), 0
     )
     block_2 = Block(block_2_header, block_2_transactions)
     blockchain._add_block(block_2)

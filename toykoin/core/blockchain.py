@@ -14,55 +14,55 @@ class Blockchain:
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(os.path.join(self.base_dir, "blocks"), exist_ok=True)
         os.makedirs(os.path.join(self.base_dir, "rev"), exist_ok=True)
-        self.last_block_hash = "00" * 32
+        self.last_block_pow = "00" * 32
 
         self.main_utxo_set = UTXOSet(self.base_dir)
         self.db = sqlite3.connect(os.path.join(self.base_dir, "chainstate.sqlite"))
         self.cursor = self.db.cursor()
         try:  # initializing db
-            self.cursor.execute("CREATE TABLE header (hash, previous_hash)")
+            self.cursor.execute("CREATE TABLE header (pow, previous_pow)")
         except:
             pass
 
     def get_last_block(self):
         self.cursor.execute(
-            "SELECT hash FROM header WHERE hash NOT IN (SELECT previous_hash FROM header)"
+            "SELECT pow FROM header WHERE pow NOT IN (SELECT previous_pow FROM header)"
         )
-        last_hash = self.cursor.fetchall()
-        # print(last_hash)
-        if len(last_hash) != 1:
+        last_pow = self.cursor.fetchall()
+        # print(last_pow)
+        if len(last_pow) != 1:
             raise Exception  # multiple blocks without child
         else:
-            return last_hash[0][0]
+            return last_pow[0][0]
 
     def _add_block(self, block):
-        previous_hash = block.header.previous_block_hash
-        if previous_hash != "00" * 32 and previous_hash != self.get_last_block():
+        previous_pow = block.header.previous_pow
+        if previous_pow != "00" * 32 and previous_pow != self.get_last_block():
             raise Exception
         if not self.main_utxo_set.validate_block(block):
             raise Exception
         reverse_block = self.main_utxo_set.add_block(block)
         self.cursor.execute(
             "INSERT INTO header VALUES (?, ?)",
-            (block.header.hash, block.header.previous_block_hash),
+            (block.header.pow, block.header.previous_pow),
         )
-        self.last_block_hash = block.header.hash
-        filename = os.path.join(self.base_dir, "blocks", block.header.hash + ".block")
+        self.last_block_pow = block.header.pow
+        filename = os.path.join(self.base_dir, "blocks", block.header.pow + ".block")
         with open(filename, "wb") as f:
             f.write(block.serialize())
-        filename = os.path.join(self.base_dir, "rev", block.header.hash + ".rev")
+        filename = os.path.join(self.base_dir, "rev", block.header.pow + ".rev")
         with open(filename, "wb") as f:
             f.write(reverse_block.serialize())
         return reverse_block
 
     def _reverse_block(self, rev_block):
-        if rev_block.hash != self.get_last_block():
+        if rev_block.pow != self.get_last_block():
             raise Exception
         if not self.main_utxo_set.validate_reverse_block(rev_block):
             raise Exception
         self.main_utxo_set.reverse_block(rev_block)
-        self.cursor.execute("DELETE FROM header WHERE hash = ?", (rev_block.hash,))
+        self.cursor.execute("DELETE FROM header WHERE pow = ?", (rev_block.pow,))
 
-    # it does not raise exceptions, it return True if the blockchain hash been changed
+    # it does not raise exceptions, it return True if the blockchain pow been changed
     def add_blocks(self, blocks):
         pass

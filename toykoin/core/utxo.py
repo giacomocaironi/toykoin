@@ -99,7 +99,7 @@ class UTXOSet:
         return True
 
     def add_block(self, block):
-        rev_block = RevBlock(block.header.hash, [], [])
+        rev_block = RevBlock(block.header.pow, [], [])
         if not self.validate_block(block):
             raise Exception
         try:

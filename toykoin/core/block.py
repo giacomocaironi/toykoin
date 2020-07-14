@@ -8,32 +8,32 @@ from typing import List, Tuple
 
 @dataclass
 class BlockHeader:
-    previous_block_hash: str = ""
+    previous_pow: str = ""
     merkle_root: str = ""
     nonce: int = 0
 
     def serialize(self):
-        out = bytes.fromhex(self.previous_block_hash)
+        out = bytes.fromhex(self.previous_pow)
         out += bytes.fromhex(self.merkle_root)
         out += self.nonce.to_bytes(12, "big")
         return out
 
     @classmethod
     def deserialize(cls, data):
-        previous_block_hash = data[:32].hex()
+        previous_pow = data[:32].hex()
         merkle_root = data[32:64].hex()
         nonce = int.from_bytes(data[64:76], "big")
-        return BlockHeader(previous_block_hash, merkle_root, nonce)
+        return BlockHeader(previous_pow, merkle_root, nonce)
 
     def is_valid(self):
-        if len(self.previous_block_hash) != 64:
+        if len(self.previous_pow) != 64:
             return False
         if len(self.merkle_root) != 64:
             return False
         return True
 
     @property
-    def hash(self):
+    def pow(self):
         return hash256(self.serialize()).hex()
 
 
@@ -82,12 +82,12 @@ class Block:
 
 @dataclass
 class RevBlock:
-    hash: str
+    pow: str
     old_txout: List[Tuple[str, TxOut]]
     removable: List[str]
 
     def serialize(self):
-        out = bytes.fromhex(self.hash)
+        out = bytes.fromhex(self.pow)
         out += len(self.old_txout).to_bytes(2, "big")
         for txout in self.old_txout:
             out += bytes.fromhex(txout[0])
@@ -100,7 +100,7 @@ class RevBlock:
 
     @classmethod
     def deserialize(cls, data):
-        hash = data[:32].hex()
+        pow = data[:32].hex()
         data = data[32:]
         old_txout = []
         removable = []
@@ -119,4 +119,4 @@ class RevBlock:
         for x in range(len_removable):
             removable.append(data[:34].hex())
             data = data[34:]
-        return RevBlock(hash, old_txout, removable)
+        return RevBlock(pow, old_txout, removable)
