@@ -68,3 +68,30 @@ def test_validation():
     tx_in_2 = TxIn(OutPoint("ff" * 32, 0), Script())
     tx = Tx([tx_in, tx_in_2], [tx_out])
     assert not tx.is_valid()
+
+
+def test_invalid_outpoint_index():
+    tx_in = TxIn(OutPoint("00" * 32, -1), Script())
+    assert not tx_in.is_valid()
+
+    tx_in = TxIn(OutPoint("00" * 32, 0xFFFF + 1), Script())
+    assert not tx_in.is_valid()
+
+
+def test_invalid_output_value():
+    tx_out = TxOut(-1, Script())
+    assert not tx_out.is_valid()
+
+    tx_out = TxOut(0xFFFFFFFFFFFFFFFF + 1, Script())
+    assert not tx_out.is_valid()
+
+
+def test_invalid_coinbase():
+    tx = Tx(
+        [
+            TxIn(OutPoint("00" * 32, 0), Script()),
+            TxIn(OutPoint("00" * 32, 0), Script()),
+        ],
+        [TxOut(1, Script())],
+    )
+    assert not tx.is_valid()

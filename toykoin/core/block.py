@@ -70,9 +70,10 @@ class Block:
         merkle_root = generate_merkle_root(self.transactions)
         if not merkle_root == self.header.merkle_root:
             return False
-        if not self.transactions[0].is_coinbase():
-            return False
-        if not self.transactions[0].is_valid():
+        if (
+            not self.transactions[0].is_coinbase()
+            or not self.transactions[0].is_valid()
+        ):
             return False
         for tx in self.transactions[1:]:
             if tx.is_coinbase() or not tx.is_valid():

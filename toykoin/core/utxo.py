@@ -116,7 +116,7 @@ class UTXOSet:
                 self.remove_utxo(complete_id)
         return rev_block
 
-    def validate_reverse_block(self, rev_block):
+    def validate_reverse_block(self, rev_block):  # TODO
         return True
 
     def reverse_block(self, rev_block):

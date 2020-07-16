@@ -3,6 +3,7 @@ from toykoin.core.block import Block, BlockHeader
 from toykoin.core.script import Script
 from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
+from toykoin.core.pow import calculate_nonce
 
 import pytest
 import os
@@ -444,7 +445,50 @@ def test_flow_12():
         block_1.header.pow, generate_merkle_root(block_3_transactions), 0
     )
     block_3 = Block(block_3_header, block_3_transactions)
+    block_3.header.nonce = calculate_nonce(block_3_header, 100)
 
-    assert blockchain.add_blocks([block_3])
+    coinbase_4 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("dd"))], [TxOut(10 ** 10, Script())]
+    )
+    block_4_transactions = [coinbase_4]
+    # invalid reference, must be block_3 header, not block_2
+    block_4_header = BlockHeader(
+        block_2.header.pow, generate_merkle_root(block_4_transactions), 0
+    )
+    block_4 = Block(block_4_header, block_4_transactions)
+
+    assert blockchain.add_blocks([block_3, block_4])
+    assert blockchain.get_last_blocks()[0][0] == block_3.header.pow
+
+    block_4.header = BlockHeader(
+        block_3.header.pow, generate_merkle_root(block_4_transactions), 0
+    )
+    assert blockchain.add_blocks([block_3, block_4])
+    assert blockchain.get_last_blocks()[0][0] == block_4.header.pow
+
+    reset_blockchain()
+
+
+def test_flow_13():
+
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+
+    blockchain = Blockchain()
+    blockchain._add_block(origin)
+    assert blockchain.last_block_pow == origin.header.pow
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+    )
+    block_1_header = BlockHeader("ff" * 32, generate_merkle_root([coinbase_1]), 0)
+    block_1 = Block(block_1_header, [coinbase_1])
+    with pytest.raises(Exception):
+        blockchain._add_block(block_1)
 
     reset_blockchain()

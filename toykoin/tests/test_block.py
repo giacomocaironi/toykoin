@@ -80,3 +80,43 @@ def test_validation_3():
 def test_reverse_serialization():
     rev_block_bytes = b"U\x91\xfb\x04\xe7t\x1c4\xc5_\xef\xd9\x00\xa6Nc\x9c5[\xd9\xa4\x86:\xeb\xdahH\x8c\xfeY\xb1\x8e\x00\x01\xb8eq\x0e\x05\x8a\xca\x8c\x02\xf2\xae\xfa)\xd1\x0bZP\x94L<9\xbc\x11N1\xb5\xc9CZ\x89\xdb\x1e\x00\x00\x00\n\x00\x00\x00\x02T\x0b\xe4\x00\x00\x00\x00\x02U\xa1\xdf\xbd.g5{(\x18\xf0P\x9f\x9a?\xca/j\xc4\x99\xf1<\xba0\xfd\xb5\x18|\x9c>\x1f\xbc\x00\x00\xc4|v\xb4\x07\x08\x08\x9fQ\xc8?\x9d\xd6\x81b\x16Y)0\x800^\x98\x9d\xfa\xae.4\xfft\x7f\x13\x00\x00"
     assert RevBlock.deserialize(rev_block_bytes).serialize() == rev_block_bytes
+
+
+def test_double_coinbase():
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+    )
+    coinbase_2 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+    )
+    header = BlockHeader()
+    block = Block(header, [coinbase_1, coinbase_2])
+    header.merkle_root = generate_merkle_root(block.transactions)
+    header.previous_pow = "00" * 32
+    assert not block.is_valid()
+
+
+def test_block_header_invalid_length():
+    header = BlockHeader()
+    header.previous_pow = "00" * 32
+    assert not header.is_valid()
+
+
+def test_empty_block():
+    header = BlockHeader()
+    block = Block(header, [])
+    header.merkle_root = "00" * 32
+    header.previous_pow = "00" * 32
+    assert not block.is_valid()
+
+
+def test_invalid_merkleroot():
+
+    tx_in = TxIn(OutPoint("ff" * 32, 0), Script())
+    tx_out = TxOut(10, Script())
+    tx_1 = Tx([tx_in], [tx_out])
+    header = BlockHeader()
+    block = Block(header, [tx_1])
+    header.merkle_root = "00" * 32
+    header.previous_pow = "00" * 32
+    assert not block.is_valid()

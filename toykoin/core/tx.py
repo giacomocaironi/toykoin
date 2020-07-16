@@ -27,7 +27,7 @@ class OutPoint:
         return self.hash == "00" * 32 and self.index == 0
 
     def is_valid(self):
-        if not self.index < 256 ** 2:
+        if not 0 <= self.index < 256 ** 2:
             return False
         return True
 
