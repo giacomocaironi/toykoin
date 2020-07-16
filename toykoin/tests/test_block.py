@@ -120,3 +120,22 @@ def test_invalid_merkleroot():
     header.merkle_root = "00" * 32
     header.previous_pow = "00" * 32
     assert not block.is_valid()
+
+
+def test_rev_block_invalid_1():
+    rev_block = RevBlock("", [], [])
+    assert not rev_block.is_valid()
+
+
+def test_rev_block_invalid_2():
+    rev_block = RevBlock("", [], [])
+    rev_block.pow = "00" * 32
+    rev_block.old_txout = [[OutPoint("ff" * 32, 0).hex, TxOut(-1)]]
+    assert not rev_block.is_valid()
+
+
+def test_rev_block_invalid_3():
+    rev_block = RevBlock("", [], [])
+    rev_block.pow = "00" * 32
+    rev_block.old_txout = [[OutPoint("00" * 32, 0).hex, TxOut()]]
+    assert not rev_block.is_valid()

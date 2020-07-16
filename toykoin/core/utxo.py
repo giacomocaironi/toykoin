@@ -117,6 +117,11 @@ class UTXOSet:
         return rev_block
 
     def validate_reverse_block(self, rev_block):  # TODO
+        if not rev_block.is_valid():
+            return False
+        for r in rev_block.removable:
+            if not self.get_utxo(r):
+                return False
         return True
 
     def reverse_block(self, rev_block):

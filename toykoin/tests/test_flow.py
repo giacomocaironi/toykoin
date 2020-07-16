@@ -492,3 +492,52 @@ def test_flow_13():
         blockchain._add_block(block_1)
 
     reset_blockchain()
+
+
+def test_flow_14():
+    """
+    This MUST NOT fail
+    """
+
+    blockchain = Blockchain()
+
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    origin_header = BlockHeader("00" * 32, generate_merkle_root([coinbase_0]), 0)
+    origin = Block(origin_header, [coinbase_0])
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
+    )
+    block_1_header = BlockHeader(
+        origin.header.pow, generate_merkle_root([coinbase_1]), 0
+    )
+    block_1 = Block(block_1_header, [coinbase_1])
+
+    coinbase_2 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+    )
+    block_2_header = BlockHeader(
+        block_1.header.pow, generate_merkle_root([coinbase_2]), 0
+    )
+    block_2 = Block(block_2_header, [coinbase_2])
+
+    # we try adding the origin again, no problem, it is skipped
+    assert blockchain.add_blocks([origin, block_1, block_2])
+
+    coinbase_3 = Tx(
+        [
+            TxIn(OutPoint("00" * 32, 0), Script("aa")),
+            TxIn(OutPoint("00" * 32, 0), Script("bb")),
+        ],
+        [TxOut(10 ** 10, Script())],
+    )
+    block_3_header = BlockHeader(
+        block_1.header.pow, generate_merkle_root([coinbase_3]), 0
+    )
+    block_3 = Block(block_3_header, [coinbase_3])
+    assert not blockchain.add_blocks([origin, block_1, block_2, block_3])
+
+    reset_blockchain()

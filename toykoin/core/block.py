@@ -1,5 +1,5 @@
 from toykoin.core.utils import generate_merkle_root
-from toykoin.core.tx import Tx, TxOut
+from toykoin.core.tx import Tx, TxOut, OutPoint
 from toykoin.core.utils import hash256
 
 from dataclasses import dataclass
@@ -121,3 +121,13 @@ class RevBlock:
             removable.append(data[:34].hex())
             data = data[34:]
         return RevBlock(pow, old_txout, removable)
+
+    def is_valid(self):
+        if len(self.pow) != 64:
+            return False
+        for txout in self.old_txout:
+            if not txout[1].is_valid():
+                return False
+            if OutPoint.deserialize(bytes.fromhex(txout[0])).is_coinbase():
+                return False
+        return True

@@ -45,8 +45,6 @@ class Blockchain:
         previous_pow = block.header.previous_pow
         if previous_pow != "00" * 32 and previous_pow != self.get_last_blocks()[0][0]:
             raise Exception
-        if not self.main_utxo_set.validate_block(block):
-            raise Exception
         reverse_block = self.main_utxo_set.add_block(block)
         self.cursor.execute(
             "INSERT INTO header VALUES (?, ?, ?)",
@@ -67,8 +65,6 @@ class Blockchain:
 
     def _reverse_block(self, rev_block):
         if rev_block.pow != self.get_last_blocks()[0][0]:
-            raise Exception
-        if not self.main_utxo_set.validate_reverse_block(rev_block):
             raise Exception
         self.main_utxo_set.reverse_block(rev_block)
         self.cursor.execute("DELETE FROM header WHERE pow = ?", (rev_block.pow,))
@@ -108,8 +104,7 @@ class Blockchain:
 
             self.main_utxo_set.db.commit()
             self.db.commit()
-        except Exception as e:
-            print(e)
+        except:
             self.main_utxo_set.db.rollback()
             self.db.rollback()
             return False
