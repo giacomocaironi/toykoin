@@ -4,6 +4,7 @@ from toykoin.core.script import Script
 from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
 from toykoin.core.pow import calculate_nonce
+from toykoin.core.sign_tx import lock_with_prvkey, unlock_with_prvkey
 
 import pytest
 import os
@@ -22,7 +23,8 @@ def test_flow_1():
     """
 
     coinbase_0 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
 
     origin_transactions = [coinbase_0]
@@ -34,7 +36,7 @@ def test_flow_1():
     assert blockchain.last_block_pow == origin.header.pow
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
         [TxOut(10 ** 10, Script())],
     )
     block_1_header = BlockHeader(
@@ -78,7 +80,8 @@ def test_flow_3():
     the coinbase 0 output
     """
     coinbase_0 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
@@ -88,7 +91,7 @@ def test_flow_3():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
         [TxOut(10 ** 10, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -143,7 +146,8 @@ def test_flow_5():
     the coinbase 0 output
     """
     coinbase_0 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
@@ -153,7 +157,7 @@ def test_flow_5():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
         [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -277,7 +281,8 @@ def test_flow_9():
     The transaction tries to spend an unkown utxo
     """
     coinbase_0 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
@@ -287,7 +292,7 @@ def test_flow_9():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
         [TxOut(10 ** 10, Script())],
     )
     # tries to spend the coinbase output at index 1, which doesn't exist
@@ -537,7 +542,7 @@ def test_flow_14():
 
     # we try adding the origin again, no problem, it is skipped
     assert blockchain.add_blocks([origin, block_1, block_2])
-
+    # invalid coinbase
     coinbase_3 = Tx(
         [
             TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa")),
@@ -550,5 +555,81 @@ def test_flow_14():
     )
     block_3 = Block(block_3_header, [coinbase_3])
     assert not blockchain.add_blocks([origin, block_1, block_2, block_3])
+
+    reset_blockchain()
+
+
+def test_flow_15():
+    """
+    This MUST fail
+    """
+
+    blockchain = Blockchain()
+
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    coinbase_0.outputs[0].locking_script = lock_with_prvkey(1)
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+    assert blockchain.add_blocks([origin])
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
+    )
+    tx = Tx(
+        [TxIn(OutPoint(coinbase_0.txid, 0), Script())],
+        [TxOut(10 ** 10 - 100, Script()), TxOut(50, Script())],
+    )
+
+    tx.inputs[0].unlocking_script = unlock_with_prvkey(tx, 2)
+
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
+
+    assert not blockchain.add_blocks([block_1])
+
+    reset_blockchain()
+
+
+def test_flow_16():
+    """
+    This MUST NOT fail
+    """
+
+    blockchain = Blockchain()
+
+    coinbase_0 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
+    )
+    coinbase_0.outputs[0].locking_script = lock_with_prvkey(1)
+    origin_transactions = [coinbase_0]
+    origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
+    origin = Block(origin_header, origin_transactions)
+    assert blockchain.add_blocks([origin])
+
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script())],
+        [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
+    )
+    tx = Tx(
+        [TxIn(OutPoint(coinbase_0.txid, 0), Script())],
+        [TxOut(10 ** 10 - 100, Script()), TxOut(50, Script())],
+    )
+
+    tx.inputs[0].unlocking_script = unlock_with_prvkey(tx, 1)
+
+    block_1_transactions = [coinbase_1, tx]
+    block_1_header = BlockHeader(
+        origin.header.pow, generate_merkle_root(block_1_transactions), 0
+    )
+    block_1 = Block(block_1_header, block_1_transactions)
+
+    assert blockchain.add_blocks([block_1])
 
     reset_blockchain()

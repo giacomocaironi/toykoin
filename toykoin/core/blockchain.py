@@ -72,6 +72,8 @@ class Blockchain:
     # it does not raise exceptions, it return True if the blockchain pow been changed
     def add_blocks(self, blocks):
 
+        last_block = self.get_last_blocks()
+
         for i, block in enumerate(blocks):
             if not self.get_block(block.header.pow):  # first new block
                 blocks = blocks[i:]
@@ -117,4 +119,8 @@ class Blockchain:
             except:
                 self.main_utxo_set.db.rollback()
                 self.db.rollback()
-        return True
+
+        if last_block == self.get_last_blocks():
+            return False
+        else:
+            return True

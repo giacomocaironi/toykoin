@@ -61,7 +61,7 @@ class UTXOSet:
             return False
 
         for tx_in, tx_out in zip(tx.inputs, previous_outputs):
-            script = tx_out.locking_script + tx_in.unlocking_script
+            script = tx_in.unlocking_script + tx_out.locking_script
             script.sighashes = [sighash_all(tx)]  # insert tx_out hashes
             result = script.execute()
             if not result:

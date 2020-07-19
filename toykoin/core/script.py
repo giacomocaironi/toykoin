@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List
+from btclib.utils import hash256
+from btclib import ssa
 
 
 @dataclass
@@ -51,11 +53,44 @@ def _pushdata(variable, data, memory):
     memory[variable] = data
 
 
-FUNCTIONS = {0x00: _pushdata}
+def _equal(variable, data, memory):
+    if memory[data[0]] == memory[data[1]]:
+        memory[variable] = b"\x01"
+    else:
+        memory[variable] = b"\x00"
+
+
+def _hash256(variable, data, memory):
+    memory[variable] = hash256(memory[data[0]])
+
+
+def _schnorr_checksig(variable, data, memory):
+    is_valid = ssa._verify(memory[0x100], memory[data[0]], memory[data[1]])
+    if is_valid:
+        memory[variable] = b"\x01"
+    else:
+        memory[variable] = b"\x00"
+
+
+def _verify(variable, data, memory):
+    if not bool(memory[data[0]][0]):
+        raise Exception
+
+
+FUNCTIONS = {
+    0x00: _pushdata,
+    0x01: _equal,
+    0x02: _hash256,
+    0x03: _schnorr_checksig,
+    0x04: _verify,
+}
 
 
 def _execute_script(script):
-    memory = {0xF0: script.sighashes[0]}
+    memory = {0x100: script.sighashes[0]}
     for variable, function, data in script.expressions:
-        FUNCTIONS[function](variable, data, memory)
+        try:
+            FUNCTIONS[function](variable, data, memory)
+        except:
+            return False
     return True
