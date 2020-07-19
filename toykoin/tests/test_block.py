@@ -84,10 +84,12 @@ def test_reverse_serialization():
 
 def test_double_coinbase():
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     coinbase_2 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
+        [TxOut(10 ** 10, Script())],
     )
     header = BlockHeader()
     block = Block(header, [coinbase_1, coinbase_2])

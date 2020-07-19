@@ -1,6 +1,7 @@
 from toykoin.core.block import Block, BlockHeader, RevBlock
 from toykoin.core.tx import OutPoint, TxOut
 from toykoin.core.script import Script
+from toykoin.core.sighash import sighash_all
 
 import os
 import sqlite3
@@ -23,7 +24,7 @@ class UTXOSet:
     def get_utxo(self, id):
         self.cursor.execute("SELECT * FROM utxo WHERE id = ?", (id,))
         utxo = self.cursor.fetchall()
-        return TxOut(utxo[0][1], Script.deserialize(utxo[0][1])) if utxo else None
+        return TxOut(utxo[0][1], Script.deserialize(utxo[0][2])) if utxo else None
 
     # does not commit to database
     def add_utxo(self, id, utxo):
@@ -61,7 +62,7 @@ class UTXOSet:
 
         for tx_in, tx_out in zip(tx.inputs, previous_outputs):
             script = tx_out.locking_script + tx_in.unlocking_script
-            script.hashes = []  # insert tx_out hashes
+            script.sighashes = [sighash_all(tx)]  # insert tx_out hashes
             result = script.execute()
             if not result:
                 return False

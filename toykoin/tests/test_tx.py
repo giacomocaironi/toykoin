@@ -42,16 +42,20 @@ def test_validation():
     tx_out = TxOut(10, Script())
     assert tx_out.is_valid()
 
-    tx_in_valid = TxIn(OutPoint("ff" * 32, 0), Script("ff" * (256 ** 2 - 1)))
+    tx_in_valid = TxIn(
+        OutPoint("ff" * 32, 0), Script.from_hex("fffd" + "ff" * (256 ** 2 - 3))
+    )
     assert tx_in_valid.is_valid()
 
-    tx_out_valid = TxOut(10, Script("ff" * (256 ** 2 - 1)))
+    tx_out_valid = TxOut(10, Script.from_hex("fffd" + "ff" * (256 ** 2 - 3)))
     assert tx_out_valid.is_valid()
 
-    tx_in_invalid = TxIn(OutPoint("ff" * 32, 0), Script("ff" * 256 ** 2))
+    tx_in_invalid = TxIn(
+        OutPoint("ff" * 32, 0), Script.from_hex("fffe" + "ff" * (256 ** 2 - 2))
+    )
     assert not tx_in_invalid.is_valid()
 
-    tx_out_invalid = TxOut(10, Script("ff" * 256 ** 2))
+    tx_out_invalid = TxOut(10, Script.from_hex("fffe" + "ff" * (256 ** 2 - 2)))
     assert not tx_out_invalid.is_valid()
 
     tx = Tx([tx_in_invalid], [tx_out_valid])

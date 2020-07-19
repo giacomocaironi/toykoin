@@ -34,7 +34,8 @@ def test_flow_1():
     assert blockchain.last_block_pow == origin.header.pow
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     block_1_header = BlockHeader(
         origin.header.pow, generate_merkle_root([coinbase_1]), 0
@@ -87,7 +88,8 @@ def test_flow_3():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
     block_1_transactions = [coinbase_1, tx]
@@ -116,7 +118,8 @@ def test_flow_4():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     # overspends
     tx = Tx(
@@ -150,7 +153,7 @@ def test_flow_5():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -180,7 +183,7 @@ def test_flow_6():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(2 * 10 ** 10 - 10 ** 5 + 1, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -244,7 +247,7 @@ def test_flow_8():
     old_utxo_list = blockchain.main_utxo_set.get_utxo_list()
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -284,7 +287,8 @@ def test_flow_9():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     # tries to spend the coinbase output at index 1, which doesn't exist
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 1), Script())], [TxOut(10 ** 5, Script())])
@@ -315,7 +319,7 @@ def test_flow_10():
     rev_block_0 = blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(2 * 10 ** 10 - 10 ** 5, Script())],
     )
     tx = Tx([TxIn(OutPoint(coinbase_0.txid, 0), Script())], [TxOut(10 ** 5, Script())])
@@ -347,7 +351,7 @@ def test_flow_11():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
     )
     tx = Tx(
@@ -362,7 +366,8 @@ def test_flow_11():
     blockchain._add_block(block_1)
 
     coinbase_2 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
+        [TxOut(10 ** 10, Script())],
     )
     tx_2 = Tx([TxIn(OutPoint(tx.txid, 0), Script())], [TxOut(10 ** 10 - 200, Script())])
     tx_3 = Tx(
@@ -399,7 +404,7 @@ def test_flow_12():
     blockchain._add_block(origin)
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
     )
     tx = Tx(
@@ -413,7 +418,8 @@ def test_flow_12():
     block_1 = Block(block_1_header, block_1_transactions)
 
     coinbase_2 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
+        [TxOut(10 ** 10, Script())],
     )
     tx_2 = Tx([TxIn(OutPoint(tx.txid, 0), Script())], [TxOut(10 ** 10 - 200, Script())])
     tx_3 = Tx(
@@ -434,11 +440,13 @@ def test_flow_12():
     assert blockchain.add_blocks([origin, block_1, block_2])
 
     coinbase_3 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("cc"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000cc"))],
+        [TxOut(10 ** 10, Script())],
     )
     # tx_4 speds the same inputs as tx_2, but it is in a different chain so it is OK
     tx_4 = Tx(
-        [TxIn(OutPoint(tx.txid, 0), Script("dd"))], [TxOut(10 ** 10 - 200, Script())]
+        [TxIn(OutPoint(tx.txid, 0), Script.from_hex("00030000dd"))],
+        [TxOut(10 ** 10 - 200, Script())],
     )
     block_3_transactions = [coinbase_3, tx_4]
     block_3_header = BlockHeader(
@@ -448,7 +456,8 @@ def test_flow_12():
     block_3.header.nonce = calculate_nonce(block_3_header, 100)
 
     coinbase_4 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("dd"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000ee"))],
+        [TxOut(10 ** 10, Script())],
     )
     block_4_transactions = [coinbase_4]
     # invalid reference, must be block_3 header, not block_2
@@ -484,7 +493,8 @@ def test_flow_13():
     assert blockchain.last_block_pow == origin.header.pow
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
     )
     block_1_header = BlockHeader("ff" * 32, generate_merkle_root([coinbase_1]), 0)
     block_1 = Block(block_1_header, [coinbase_1])
@@ -508,7 +518,7 @@ def test_flow_14():
     origin = Block(origin_header, [coinbase_0])
 
     coinbase_1 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("aa"))],
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
         [TxOut(5 * 10 ** 9, Script()), TxOut(5 * 10 ** 9, Script())],
     )
     block_1_header = BlockHeader(
@@ -517,7 +527,8 @@ def test_flow_14():
     block_1 = Block(block_1_header, [coinbase_1])
 
     coinbase_2 = Tx(
-        [TxIn(OutPoint("00" * 32, 0), Script("bb"))], [TxOut(10 ** 10, Script())]
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
+        [TxOut(10 ** 10, Script())],
     )
     block_2_header = BlockHeader(
         block_1.header.pow, generate_merkle_root([coinbase_2]), 0
@@ -529,8 +540,8 @@ def test_flow_14():
 
     coinbase_3 = Tx(
         [
-            TxIn(OutPoint("00" * 32, 0), Script("aa")),
-            TxIn(OutPoint("00" * 32, 0), Script("bb")),
+            TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa")),
+            TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb")),
         ],
         [TxOut(10 ** 10, Script())],
     )
