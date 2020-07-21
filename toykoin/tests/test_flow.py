@@ -4,7 +4,15 @@ from toykoin.core.script import Script
 from toykoin.core.blockchain import Blockchain
 from toykoin.core.utils import generate_merkle_root
 from toykoin.core.pow import calculate_nonce
-from toykoin.core.sign_tx import lock_with_prvkey, unlock_with_prvkey
+from toykoin.core.sign_tx import (
+    pubkey_from_prvkey,
+    pubkey_hash_from_prvkey,
+    lock_p2pk,
+    lock_p2pkh,
+    unlock_p2pk,
+    unlock_p2pkh,
+)
+from toykoin.core.sighash import sighash_all
 
 import pytest
 import os
@@ -569,7 +577,7 @@ def test_flow_15():
     coinbase_0 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
     )
-    coinbase_0.outputs[0].locking_script = lock_with_prvkey(1)
+    coinbase_0.outputs[0].locking_script = lock_p2pk(pubkey_from_prvkey(1))
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
     origin = Block(origin_header, origin_transactions)
@@ -584,7 +592,7 @@ def test_flow_15():
         [TxOut(10 ** 10 - 100, Script()), TxOut(50, Script())],
     )
 
-    tx.inputs[0].unlocking_script = unlock_with_prvkey(tx, 2)
+    tx.inputs[0].unlocking_script = unlock_p2pk(sighash_all(tx), 2)
 
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(
@@ -607,7 +615,7 @@ def test_flow_16():
     coinbase_0 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
     )
-    coinbase_0.outputs[0].locking_script = lock_with_prvkey(1)
+    coinbase_0.outputs[0].locking_script = lock_p2pkh(pubkey_hash_from_prvkey(1))
     origin_transactions = [coinbase_0]
     origin_header = BlockHeader("00" * 32, generate_merkle_root(origin_transactions), 0)
     origin = Block(origin_header, origin_transactions)
@@ -622,7 +630,7 @@ def test_flow_16():
         [TxOut(10 ** 10 - 100, Script()), TxOut(50, Script())],
     )
 
-    tx.inputs[0].unlocking_script = unlock_with_prvkey(tx, 1)
+    tx.inputs[0].unlocking_script = unlock_p2pkh(sighash_all(tx), 1)
 
     block_1_transactions = [coinbase_1, tx]
     block_1_header = BlockHeader(

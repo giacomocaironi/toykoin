@@ -45,8 +45,8 @@ class Script:
     def is_valid(self):
         return len(self.serialize()) < 256 ** 2
 
-    def execute(self):
-        return _execute_script(self)
+    def execute(self, memory):
+        return _execute_script(self, memory)
 
 
 def _pushdata(variable, data, memory):
@@ -77,17 +77,23 @@ def _verify(variable, data, memory):
         raise Exception
 
 
+OP_PUSHDATA = 0x00
+OP_EQUAL = 0x01
+OP_HASH256 = 0x02
+OP_SHNORR_CHECKSIG = 0x03
+OP_VERIFY = 0x04
+
 FUNCTIONS = {
-    0x00: _pushdata,
-    0x01: _equal,
-    0x02: _hash256,
-    0x03: _schnorr_checksig,
-    0x04: _verify,
+    OP_PUSHDATA: _pushdata,
+    OP_EQUAL: _equal,
+    OP_HASH256: _hash256,
+    OP_SHNORR_CHECKSIG: _schnorr_checksig,
+    OP_VERIFY: _verify,
 }
 
 
-def _execute_script(script):
-    memory = {0x100: script.sighashes[0]}
+def _execute_script(script, memory={}):
+    memory = memory
     for variable, function, data in script.expressions:
         try:
             FUNCTIONS[function](variable, data, memory)
