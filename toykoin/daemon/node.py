@@ -45,8 +45,6 @@ class Node(threading.Thread):
                 self.connections.append(new_connection)
             except socket.error:
                 pass
-            except:
-                print("error")
             with self.lock:
                 for conn in self.connections:
                     if not conn.is_alive():

@@ -49,15 +49,18 @@ class Connection(threading.Thread):
         self.terminate_flag.set()
 
     def parse_messages(self):
-        msgs = self.buffer.split(self.network)[1:]
+        msgs = self.buffer.split(self.network)
+        if not msgs[0]:
+            msgs = msgs[1:]
+            self.buffer = self.buffer[len(self.network) :]
         for i, msg in enumerate(msgs):
             try:
                 payload = get_payload(msg)
                 self.messages.append(payload)
-                self.buffer = self.buffer[len(msg) :]
+                self.buffer = self.buffer[len(msg) + len(self.network) :]
             except Exception:
                 if i != len(msgs) - 1:
-                    self.buffer = self.buffer[len(msg) :]
+                    self.buffer = self.buffer[len(msg) + len(self.network) :]
 
     def run(self):
         self.socket.settimeout(0.0)

@@ -16,7 +16,6 @@ class Blockchain:
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(os.path.join(self.base_dir, "blocks"), exist_ok=True)
         os.makedirs(os.path.join(self.base_dir, "rev"), exist_ok=True)
-        self.last_block_pow = "00" * 32
 
         self.main_utxo_set = UTXOSet(self.base_dir)
         self.db = sqlite3.connect(os.path.join(self.base_dir, "chainstate.sqlite"))
@@ -54,7 +53,6 @@ class Blockchain:
                 self.get_last_blocks()[0][2] + 1,
             ),
         )
-        self.last_block_pow = block.header.pow
         filename = os.path.join(self.base_dir, "blocks", block.header.pow + ".block")
         with open(filename, "wb") as f:
             f.write(block.serialize())

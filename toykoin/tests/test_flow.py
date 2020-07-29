@@ -34,7 +34,7 @@ def test_flow_1():
 
     blockchain = Blockchain()
     blockchain._add_block(origin)
-    assert blockchain.last_block_pow == origin.header.pow
+    assert blockchain.get_last_blocks()[0][0] == origin.header.pow
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000bb"))],
@@ -45,7 +45,7 @@ def test_flow_1():
     )
     block_1 = Block(block_1_header, [coinbase_1])
     blockchain._add_block(block_1)
-    assert blockchain.last_block_pow == block_1.header.pow
+    assert blockchain.get_last_blocks()[0][0] == block_1.header.pow
 
     reset_blockchain()
 
@@ -219,7 +219,7 @@ def test_flow_7():
 
     blockchain = Blockchain()
     blockchain._add_block(origin)
-    assert blockchain.last_block_pow == origin.header.pow
+    assert blockchain.get_last_blocks()[0][0] == origin.header.pow
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script())], [TxOut(10 ** 10, Script())]
@@ -496,7 +496,7 @@ def test_flow_13():
 
     blockchain = Blockchain()
     blockchain._add_block(origin)
-    assert blockchain.last_block_pow == origin.header.pow
+    assert blockchain.get_last_blocks()[0][0] == origin.header.pow
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
