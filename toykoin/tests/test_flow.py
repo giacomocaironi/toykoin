@@ -2,7 +2,7 @@ from toykoin.core.tx import Tx, TxIn, TxOut, OutPoint
 from toykoin.core.block import Block, BlockHeader
 from toykoin.core.script import Script
 from toykoin.core.blockchain import Blockchain
-from toykoin.core.utils import generate_merkle_root
+from toykoin.core.utils import generate_merkle_root, reset_blockchain
 from toykoin.core.pow import calculate_nonce
 from toykoin.core.sign_tx import (
     pubkey_from_prvkey,
@@ -15,13 +15,6 @@ from toykoin.core.sign_tx import (
 from toykoin.core.sighash import sighash_all
 
 import pytest
-import os
-import shutil
-
-
-def reset_blockchain():
-    base_dir = os.path.join(os.path.expanduser("~"), ".toykoin", "regtest")
-    shutil.rmtree(base_dir)
 
 
 def test_flow_1():

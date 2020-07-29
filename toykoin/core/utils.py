@@ -1,4 +1,6 @@
 from btclib.utils import hash256
+import shutil
+import os
 
 
 def generate_merkle_root(transactions):
@@ -14,3 +16,8 @@ def generate_merkle_root(transactions):
         hashes = hashes_buffer[:]
         hashes_buffer = []
     return hashes[0].hex()
+
+
+def reset_blockchain(name="regtest"):
+    base_dir = os.path.join(os.path.expanduser("~"), ".toykoin", name)
+    shutil.rmtree(base_dir)

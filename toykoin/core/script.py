@@ -73,7 +73,7 @@ def _schnorr_checksig(variable, data, memory):
 
 
 def _verify(variable, data, memory):
-    if not bool(memory[data[0]][0]):
+    if memory[data[0]] == b"\x00":
         raise Exception
 
 
