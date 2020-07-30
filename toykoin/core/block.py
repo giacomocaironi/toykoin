@@ -75,9 +75,15 @@ class Block:
             or not self.transactions[0].is_valid()
         ):
             return False
+        outpoints = []
         for tx in self.transactions[1:]:
             if tx.is_coinbase() or not tx.is_valid():
                 return False
+            for txin in tx.inputs:
+                if txin.prevout in outpoints:
+                    return False
+                else:
+                    outpoints.append(txin.prevout)
         return True
 
 

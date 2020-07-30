@@ -141,3 +141,23 @@ def test_rev_block_invalid_3():
     rev_block.pow = "00" * 32
     rev_block.old_txout = [[OutPoint("00" * 32, 0).hex, TxOut()]]
     assert not rev_block.is_valid()
+
+
+def test_double_spend():
+    coinbase_1 = Tx(
+        [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
+        [TxOut(10 ** 10, Script())],
+    )
+    tx_1 = Tx(
+        [TxIn(OutPoint("aa" * 32, 0), Script.from_hex("00030000bb"))],
+        [TxOut(10 ** 10, Script())],
+    )
+    tx_2 = Tx(
+        [TxIn(OutPoint("aa" * 32, 0), Script.from_hex("00030000cc"))],
+        [TxOut(10 ** 10, Script())],
+    )
+    header = BlockHeader()
+    block = Block(header, [coinbase_1, tx_1, tx_2])
+    header.merkle_root = generate_merkle_root(block.transactions)
+    header.previous_pow = "00" * 32
+    assert not block.is_valid()
