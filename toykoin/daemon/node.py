@@ -27,9 +27,10 @@ class Node(threading.Thread):
         self.network = network
         self.connections = []
 
+        self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server_socket.bind(("0.0.0.0", port))
+        self.server_socket.bind(("0.0.0.0", self.port))
         self.server_socket.listen()
         self.server_socket.settimeout(0.0)
 
@@ -40,7 +41,7 @@ class Node(threading.Thread):
         while not self.terminate_flag.is_set():
             try:
                 conn, address = self.server_socket.accept()
-                new_connection = Connection(conn, address, self.network)
+                new_connection = Connection(conn, address, self)
                 new_connection.start()
                 self.connections.append(new_connection)
             except socket.error:
@@ -63,7 +64,7 @@ class Node(threading.Thread):
     def connect(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((ip, port))
-        new_connection = Connection(sock, (ip, port), self.network)
+        new_connection = Connection(sock, (ip, port), self)
         new_connection.start()
         self.connections.append(new_connection)
 

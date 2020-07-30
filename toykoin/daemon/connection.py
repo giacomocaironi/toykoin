@@ -6,13 +6,15 @@ import time
 
 
 class Connection(threading.Thread):
-    def __init__(self, socket, address, network="regtest"):
+    def __init__(self, socket, address, node):
         super().__init__()
+
+        self.node = node
         self.socket = socket
-        self.address = address
+        self.address = list(address)
 
         self.terminate_flag = threading.Event()
-        self.network = network.encode()
+        self.network = node.network.encode()
 
         self.messages = []
         self.buffer = b""
@@ -29,32 +31,31 @@ class Connection(threading.Thread):
         self.terminate_flag.set()
 
     def connect(self):
-        self.send(Version(version=1, address="").serialize())
+        self.send(Version(version=1, port=self.node.port).serialize())
 
     def validate_handshake(self):
         if not self.received_version:
             if self.messages:
-                if (
-                    not self.messages[0][0] == "version"
-                ):  # first message must be version
+                # first message must be version
+                if not self.messages[0][0] == "version":
                     self.stop()
                 else:
-                    self.messages = self.messages[1:]
-                    self.received_version = True
-                    if True:
+                    version_message = Version.deserialize(self.messages[0][1])
+                    if version_message.accept():
+                        self.address[1] = version_message.port
                         self.send(Verack().serialize())
+                        self.messages = self.messages[1:]
+                        self.received_version = True
                     else:
                         self.stop()
         if self.received_version and not self.connected:
             if self.messages:
-                if (
-                    not self.messages[0][0] == "verack"
-                ):  # second message must be version
+                # second message must be verack
+                if not self.messages[0][0] == "verack":
                     self.stop()
                 else:
                     self.messages = self.messages[1:]
                     self.connected = True
-        return True
 
     def parse_messages(self):
         msgs = self.buffer.split(self.network)
@@ -79,7 +80,7 @@ class Connection(threading.Thread):
     def run(self):
         self.socket.settimeout(0.0)
         while not self.terminate_flag.is_set():
-            try:
+            try:  # TODO: exit if other side is closed
                 line = self.socket.recv(4096)
                 self.buffer += line
                 self.parse_messages()

@@ -35,23 +35,28 @@ def get_payload(message: bytes):
 @dataclass
 class Version:
     version: int
-    address: str
+    port: int
 
-    @staticmethod
+    @classmethod
     def deserialize(cls, data):
-        pass
+        version = int.from_bytes(data[:2], "big")
+        port = int.from_bytes(data[2:6], "big")
+        return Version(version=version, port=port)
 
     def serialize(self):
         payload = self.version.to_bytes(2, "big")
-        payload += self.address.encode()
+        payload += self.port.to_bytes(4, "big")
         return add_headers("version", payload)
+
+    def accept(self):
+        return self.version <= 1
 
 
 @dataclass
 class Verack:
-    @staticmethod
+    @classmethod
     def deserialize(cls, data):
-        pass
+        return Verack()
 
     def serialize(self):
         return add_headers("verack", b"")
@@ -61,9 +66,9 @@ class Verack:
 class Debug:
     payload: bytes
 
-    @staticmethod
+    @classmethod
     def deserialize(cls, data):
-        pass
+        return Debug(payload=data)
 
     def serialize(self):
         return add_headers("debug", self.payload)
