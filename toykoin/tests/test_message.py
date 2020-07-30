@@ -1,4 +1,4 @@
-from toykoin.daemon.connection import _verify_headers, add_headers
+from toykoin.daemon.messages import _verify_headers, add_headers
 
 import pytest
 

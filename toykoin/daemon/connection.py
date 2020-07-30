@@ -1,35 +1,8 @@
-from hashlib import sha256
+from toykoin.daemon.messages import get_payload, Version, Verack
+
 import threading
 import socket
-
-
-def add_headers(name: str, payload: bytes):
-    command = name + ((12 - len(name)) * "\00")
-    payload_len = len(payload).to_bytes(4, "big")
-    checksum = sha256(sha256(payload).digest()).digest()[:4]
-    return command.encode() + payload_len + checksum + payload
-
-
-def _verify_headers(message: bytes):
-    message_type = message[:12]
-    payload_len = int.from_bytes(message[12:16], "big")
-    checksum = message[16:20]
-    payload = message[20:]
-    if len(payload) != payload_len:
-        raise Exception("Wrong payload length")
-    if checksum != sha256(sha256(payload).digest()).digest()[:4]:
-        raise Exception("Wrong checksum, the message might have been tampered")
-
-
-def get_payload(message: bytes):
-    try:
-        _verify_headers(message)
-    except Exception:
-        raise Exception("Incorrect headers")
-    message_type = message[:12].rstrip(b"\x00")
-    payload = message[20:]
-
-    return [message_type, payload]
+import time
 
 
 class Connection(threading.Thread):
@@ -37,16 +10,51 @@ class Connection(threading.Thread):
         super().__init__()
         self.socket = socket
         self.address = address
+
         self.terminate_flag = threading.Event()
         self.network = network.encode()
+
         self.messages = []
         self.buffer = b""
+
+        self.received_version = False
+        self.connected = False
+        self.conn_time = time.time()
+        self.connect()
 
     def send(self, data):
         self.socket.sendall(self.network + data)
 
     def stop(self):
         self.terminate_flag.set()
+
+    def connect(self):
+        self.send(Version(version=1, address="").serialize())
+
+    def validate_handshake(self):
+        if not self.received_version:
+            if self.messages:
+                if (
+                    not self.messages[0][0] == "version"
+                ):  # first message must be version
+                    self.stop()
+                else:
+                    self.messages = self.messages[1:]
+                    self.received_version = True
+                    if True:
+                        self.send(Verack().serialize())
+                    else:
+                        self.stop()
+        if self.received_version and not self.connected:
+            if self.messages:
+                if (
+                    not self.messages[0][0] == "verack"
+                ):  # second message must be version
+                    self.stop()
+                else:
+                    self.messages = self.messages[1:]
+                    self.connected = True
+        return True
 
     def parse_messages(self):
         msgs = self.buffer.split(self.network)
@@ -62,6 +70,12 @@ class Connection(threading.Thread):
                 if i != len(msgs) - 1:
                     self.buffer = self.buffer[len(msg) + len(self.network) :]
 
+    def handle_messages(self):
+        if not self.connected:
+            self.validate_handshake()
+        else:
+            pass
+
     def run(self):
         self.socket.settimeout(0.0)
         while not self.terminate_flag.is_set():
@@ -69,9 +83,12 @@ class Connection(threading.Thread):
                 line = self.socket.recv(4096)
                 self.buffer += line
                 self.parse_messages()
+                if self.messages:
+                    self.handle_messages()
             except socket.error:
                 pass
-            except Exception:
+            except Exception as e:
+                print(e)
                 self.terminate_flag.set()
 
     def __repr__(self):
