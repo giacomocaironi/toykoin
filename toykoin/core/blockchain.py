@@ -17,13 +17,16 @@ class Blockchain:
         os.makedirs(os.path.join(self.base_dir, "blocks"), exist_ok=True)
         os.makedirs(os.path.join(self.base_dir, "rev"), exist_ok=True)
 
-        self.main_utxo_set = UTXOSet(self.base_dir)
+        self.__utxo_set = UTXOSet(self.base_dir)
         self.db = sqlite3.connect(os.path.join(self.base_dir, "chainstate.sqlite"))
         self.cursor = self.db.cursor()
         try:  # initializing db
             self.cursor.execute("CREATE TABLE header (pow, previous_pow, id)")
         except:
             pass
+
+    def get_utxo_set(self):
+        return self.__utxo_set
 
     def get_block(self, pow):
         self.cursor.execute("SELECT * FROM header WHERE pow = ?", (pow,))
@@ -44,7 +47,7 @@ class Blockchain:
         previous_pow = block.header.previous_pow
         if previous_pow != "00" * 32 and previous_pow != self.get_last_blocks()[0][0]:
             raise Exception
-        reverse_block = self.main_utxo_set.add_block(block)
+        reverse_block = self.__utxo_set.add_block(block)
         self.cursor.execute(
             "INSERT INTO header VALUES (?, ?, ?)",
             (
@@ -64,7 +67,7 @@ class Blockchain:
     def _reverse_block(self, rev_block):
         if rev_block.pow != self.get_last_blocks()[0][0]:
             raise Exception
-        self.main_utxo_set.reverse_block(rev_block)
+        self.__utxo_set.reverse_block(rev_block)
         self.cursor.execute("DELETE FROM header WHERE pow = ?", (rev_block.pow,))
 
     # it does not raise exceptions, it return True if the blockchain pow been changed
@@ -102,20 +105,20 @@ class Blockchain:
                         if work_from_chain(current_chain) > previous_work:
                             break  # already in best chain
 
-            self.main_utxo_set.db.commit()
+            self.__utxo_set.db.commit()
             self.db.commit()
         except:
-            self.main_utxo_set.db.rollback()
+            self.__utxo_set.db.rollback()
             self.db.rollback()
             return False
 
         for block in blocks:
             try:
                 self._add_block(block)
-                self.main_utxo_set.db.commit()
+                self.__utxo_set.db.commit()
                 self.db.commit()
             except:
-                self.main_utxo_set.db.rollback()
+                self.__utxo_set.db.rollback()
                 self.db.rollback()
 
         if last_block == self.get_last_blocks():

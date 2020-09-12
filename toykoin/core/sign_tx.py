@@ -9,7 +9,7 @@ from toykoin.core.script import (
 from toykoin.core.utils import hash256
 
 from btclib import ssa
-from btclib.curvemult import mult
+from btclib.curve import mult
 from btclib.secpoint import bytes_from_point
 
 

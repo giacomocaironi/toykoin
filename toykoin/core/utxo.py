@@ -8,7 +8,7 @@ import sqlite3
 
 
 class UTXOSet:
-    def __init__(self, location="", name="main_utxo_set"):
+    def __init__(self, location="", name="utxo_set"):
         self.db = sqlite3.connect(os.path.join(location, name + ".sqlite"))
         self.cursor = self.db.cursor()
         try:  # initializing db

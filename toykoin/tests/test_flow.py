@@ -249,7 +249,7 @@ def test_flow_8():
     blockchain = Blockchain()
     rev_origin = blockchain._add_block(origin)
 
-    old_utxo_list = blockchain.main_utxo_set.get_utxo_list()
+    old_utxo_list = blockchain.get_utxo_set().get_utxo_list()
 
     coinbase_1 = Tx(
         [TxIn(OutPoint("00" * 32, 0), Script.from_hex("00030000aa"))],
@@ -263,15 +263,15 @@ def test_flow_8():
     block_1 = Block(block_1_header, block_1_transactions)
     rev_block = blockchain._add_block(block_1)
 
-    assert not blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
+    assert not blockchain.get_utxo_set().get_utxo_list() == old_utxo_list
     blockchain._reverse_block(rev_block)
-    assert blockchain.main_utxo_set.get_utxo_list() == old_utxo_list
+    assert blockchain.get_utxo_set().get_utxo_list() == old_utxo_list
 
     with pytest.raises(Exception):
         blockchain._reverse_block(rev_block)
 
     blockchain._reverse_block(rev_origin)
-    assert blockchain.main_utxo_set.get_utxo_list() == []
+    assert blockchain.get_utxo_set().get_utxo_list() == []
 
     reset_blockchain()
 
